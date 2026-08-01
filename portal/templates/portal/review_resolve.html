@@ -82,7 +82,7 @@
   function renderOptions(matches) {
     box.innerHTML = '';
     if (!matches.length) { box.classList.add('hidden'); return; }
-    matches.slice(0, 25).forEach(function (c) {
+    matches.slice(0, 100).forEach(function (c) {
       var item = document.createElement('div');
       item.textContent = c.label;
       item.className = 'cursor-pointer px-3 py-2 text-sm text-slate-700 hover:bg-slate-50';
@@ -97,11 +97,19 @@
     box.classList.remove('hidden');
   }
 
+  function currentMatches() {
+    var q = search.value.trim().toLowerCase();
+    if (!q) return clients;
+    return clients.filter(function (c) { return c.label.toLowerCase().indexOf(q) !== -1; });
+  }
+
   search.addEventListener('input', function () {
     hidden.value = '';
-    var q = search.value.trim().toLowerCase();
-    if (!q) { box.classList.add('hidden'); return; }
-    renderOptions(clients.filter(function (c) { return c.label.toLowerCase().indexOf(q) !== -1; }));
+    renderOptions(currentMatches());
+  });
+
+  search.addEventListener('focus', function () {
+    renderOptions(currentMatches());
   });
 
   document.addEventListener('click', function (e) {
