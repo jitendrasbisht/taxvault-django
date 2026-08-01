@@ -43,12 +43,15 @@
         {% if not document.client %}
         <div>
           <label class="mb-1 block text-xs font-medium text-slate-500">Client</label>
-          <select name="client" required class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
-            <option value="">Select a client&hellip;</option>
+          <input type="text" id="client-search" list="clients-datalist" autocomplete="off"
+                 placeholder="Search by name or PAN…"
+                 class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-slate-300 focus:bg-white">
+          <datalist id="clients-datalist">
             {% for c in clients %}
-            <option value="{{ c.pk }}">{{ c.pan }} — {{ c.name }}</option>
+            <option data-id="{{ c.pk }}" value="{{ c.name }} — {{ c.pan }}"></option>
             {% endfor %}
-          </select>
+          </datalist>
+          <input type="hidden" name="client" id="client-id-input" required>
         </div>
         {% endif %}
         <div>
@@ -68,4 +71,16 @@
   </div>
   <div class="h-8"></div>
 </div>
+<script>
+(function () {
+  var search = document.getElementById('client-search');
+  if (!search) return;
+  var hidden = document.getElementById('client-id-input');
+  var options = Array.prototype.slice.call(document.querySelectorAll('#clients-datalist option'));
+  search.addEventListener('input', function () {
+    var match = options.find(function (o) { return o.value === search.value; });
+    hidden.value = match ? match.dataset.id : '';
+  });
+})();
+</script>
 {% endblock %}
