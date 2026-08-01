@@ -30,7 +30,9 @@ def send_initial_request(client):
         + "\n\nThank you.\n"
     )
     send_mail(subject, body, settings.DEFAULT_FROM_EMAIL, [client.email])
-    ReminderLog.objects.create(firm=client.firm, client=client, stage=ReminderLog.STAGE_INITIAL)
+    ReminderLog.objects.create(
+        firm=client.firm, client=client, stage=ReminderLog.STAGE_INITIAL, subject=subject, body=body
+    )
 
 
 def send_followup(client):
@@ -49,5 +51,7 @@ def send_followup(client):
         + "\n\nThank you.\n"
     )
     send_mail(subject, body, settings.DEFAULT_FROM_EMAIL, [client.email])
-    ReminderLog.objects.create(firm=client.firm, client=client, stage=ReminderLog.STAGE_FOLLOWUP)
+    ReminderLog.objects.create(
+        firm=client.firm, client=client, stage=ReminderLog.STAGE_FOLLOWUP, subject=subject, body=body
+    )
     return True

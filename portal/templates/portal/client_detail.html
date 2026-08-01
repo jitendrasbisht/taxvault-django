@@ -90,10 +90,16 @@
         {% if reminder_logs %}
         <div class="space-y-2">
           {% for log in reminder_logs %}
-          <div class="flex items-center justify-between text-xs">
-            <span class="text-slate-600">{{ log.get_stage_display }}</span>
-            <span class="text-slate-400">{{ log.sent_at|date:"M j, Y H:i" }}</span>
-          </div>
+          <details class="text-xs">
+            <summary class="flex cursor-pointer items-center justify-between text-slate-600 hover:text-slate-900">
+              <span>{{ log.get_stage_display }}</span>
+              <span class="text-slate-400">{{ log.sent_at|date:"M j, Y H:i" }}</span>
+            </summary>
+            <div class="mt-2 rounded-lg bg-slate-50 p-3">
+              <p class="font-medium text-slate-700">{{ log.subject }}</p>
+              <pre class="mt-1.5 whitespace-pre-wrap font-sans text-slate-500">{{ log.body }}</pre>
+            </div>
+          </details>
           {% endfor %}
         </div>
         {% else %}

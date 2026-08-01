@@ -146,7 +146,12 @@ class Client(models.Model):
 class ReminderLog(models.Model):
     """Section 11: simple send log (client, stage, date sent) -- visibility into reminder
     history so staff can see what's already gone out. Created only by an actual send, never
-    manually."""
+    manually.
+
+    subject/body go beyond Section 11's locked "client, stage, date sent" field list --
+    added with explicit approval so staff can review exactly what was sent from inside the
+    app, since the console-backend output it's copied from won't exist once a real email
+    provider is wired up."""
 
     STAGE_INITIAL = "initial"
     STAGE_FOLLOWUP = "followup"
@@ -158,6 +163,8 @@ class ReminderLog(models.Model):
     firm = models.ForeignKey(Firm, on_delete=models.CASCADE, related_name="reminder_logs")
     client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name="reminder_logs")
     stage = models.CharField(max_length=10, choices=STAGE_CHOICES)
+    subject = models.CharField(max_length=500, blank=True, default="")
+    body = models.TextField(blank=True, default="")
     sent_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

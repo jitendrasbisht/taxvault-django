@@ -63,17 +63,27 @@
             <th class="px-5 py-2 font-medium">Client</th>
             <th class="px-3 py-2 font-medium">Stage</th>
             <th class="px-3 py-2 font-medium">Sent At</th>
+            <th class="px-3 py-2 font-medium">Content</th>
           </tr>
         </thead>
         <tbody>
           {% for log in logs %}
-          <tr class="border-b border-slate-50 last:border-0">
+          <tr class="border-b border-slate-50 last:border-0 align-top">
             <td class="px-5 py-2 text-slate-700">{{ log.client.name }}</td>
             <td class="px-3 py-2 text-slate-500">{{ log.get_stage_display }}</td>
             <td class="px-3 py-2 text-slate-400">{{ log.sent_at|date:"M j, Y H:i" }}</td>
+            <td class="px-3 py-2">
+              <details>
+                <summary class="cursor-pointer text-sky-600 hover:underline">View</summary>
+                <div class="mt-2 max-w-sm rounded-lg bg-slate-50 p-3">
+                  <p class="font-medium text-slate-700">{{ log.subject }}</p>
+                  <pre class="mt-1.5 whitespace-pre-wrap font-sans text-slate-500">{{ log.body }}</pre>
+                </div>
+              </details>
+            </td>
           </tr>
           {% empty %}
-          <tr><td class="px-5 py-4 text-slate-400" colspan="3">No reminders sent yet.</td></tr>
+          <tr><td class="px-5 py-4 text-slate-400" colspan="4">No reminders sent yet.</td></tr>
           {% endfor %}
         </tbody>
       </table>
