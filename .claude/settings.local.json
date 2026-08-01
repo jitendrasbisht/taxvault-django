@@ -31,7 +31,9 @@
       "Bash(curl -s -D - -o /dev/null \"http://localhost:8000/admin/documents/document/3/preview/\" -H \"Cookie: $\\(cat /dev/null\\)\")",
       "Bash(git status *)",
       "Bash(venv/Scripts/python.exe -c ' *)",
-      "Bash(tasklist)"
+      "Bash(tasklist)",
+      "Bash(tasklist //FI \"IMAGENAME eq python.exe\" //V)",
+      "Bash(\"venv/Scripts/python.exe\" manage.py qcluster)"
     ]
   }
 }
