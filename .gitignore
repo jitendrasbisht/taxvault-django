@@ -8,5 +8,4 @@ staticfiles/
 media/
 .DS_Store
 vault_storage/
-intake_test_folder/
-intake_test_folder_async/
+downloads_doc/
