@@ -1,0 +1,36 @@
+{% extends "portal/base.html" %}
+{% block title %}Review Queue — TaxVault{% endblock %}
+
+{% block content %}
+<div class="flex-1 overflow-auto">
+  <div class="border-b border-slate-200 bg-white px-8 py-6">
+    <h1 class="text-xl font-semibold text-slate-900">Review Queue</h1>
+    <p class="mt-0.5 text-sm text-slate-500">{{ documents|length }} file(s) need manual attention &mdash; unmatched, unclassified, or flagged as a possible duplicate</p>
+  </div>
+  <div class="mx-8 mt-6 space-y-3">
+    {% for doc in documents %}
+    <div class="flex items-center gap-4 rounded-xl border border-slate-200 bg-white p-4">
+      <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
+        <i data-lucide="file-text" class="h-4 w-4"></i>
+      </span>
+      <div class="min-w-0 flex-1">
+        <p class="truncate text-sm font-medium text-slate-800">{{ doc.original_filename }}</p>
+        <p class="mt-0.5 text-xs text-slate-400">
+          {{ doc.review_reason }} &middot; detected:
+          <span class="font-mono">{{ doc.detected_pan|default:"—" }}</span>
+          {% if doc.client %}&middot; matched: {{ doc.client }}{% endif %}
+        </p>
+      </div>
+      <a href="{% url 'portal:review_resolve' doc.pk %}" class="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50">
+        Resolve
+      </a>
+    </div>
+    {% empty %}
+    <div class="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-400">
+      Nothing needs review right now.
+    </div>
+    {% endfor %}
+  </div>
+  <div class="h-8"></div>
+</div>
+{% endblock %}

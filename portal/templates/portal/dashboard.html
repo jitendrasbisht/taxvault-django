@@ -1,0 +1,109 @@
+{% extends "portal/base.html" %}
+{% block title %}Dashboard — TaxVault{% endblock %}
+
+{% block content %}
+<div class="flex-1 overflow-auto">
+  <div class="border-b border-slate-200 bg-white px-8 py-6">
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-xl font-semibold text-slate-900">Client Dashboard</h1>
+        <p class="mt-0.5 text-sm text-slate-500">Assessment Year {{ ay }} &middot; {{ total_clients }} clients</p>
+      </div>
+      <a href="{% url 'portal:reminders' %}" class="flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
+        <i data-lucide="send" class="h-[15px] w-[15px]"></i> Send Reminders
+      </a>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-3 gap-4 px-8 pt-6">
+    <a href="?status={% if status_filter == 'ready' %}all{% else %}ready{% endif %}{% if query %}&q={{ query }}{% endif %}"
+       class="rounded-xl border p-4 text-left transition-all bg-white {% if status_filter == 'ready' %}border-slate-900 ring-1 ring-slate-900{% else %}border-slate-200 hover:border-slate-300{% endif %}">
+      <div class="flex items-center justify-between">
+        <span class="flex h-9 w-9 items-center justify-center rounded-lg text-emerald-600 bg-emerald-50">
+          <i data-lucide="check-circle-2" class="h-[17px] w-[17px]"></i>
+        </span>
+        <span class="text-2xl font-semibold text-slate-900">{{ counts.ready }}</span>
+      </div>
+      <p class="mt-3 text-sm font-medium text-slate-600">Ready for ITR</p>
+    </a>
+    <a href="?status={% if status_filter == 'in_progress' %}all{% else %}in_progress{% endif %}{% if query %}&q={{ query }}{% endif %}"
+       class="rounded-xl border p-4 text-left transition-all bg-white {% if status_filter == 'in_progress' %}border-slate-900 ring-1 ring-slate-900{% else %}border-slate-200 hover:border-slate-300{% endif %}">
+      <div class="flex items-center justify-between">
+        <span class="flex h-9 w-9 items-center justify-center rounded-lg text-amber-600 bg-amber-50">
+          <i data-lucide="clock" class="h-[17px] w-[17px]"></i>
+        </span>
+        <span class="text-2xl font-semibold text-slate-900">{{ counts.in_progress }}</span>
+      </div>
+      <p class="mt-3 text-sm font-medium text-slate-600">In Progress</p>
+    </a>
+    <a href="?status={% if status_filter == 'not_started' %}all{% else %}not_started{% endif %}{% if query %}&q={{ query }}{% endif %}"
+       class="rounded-xl border p-4 text-left transition-all bg-white {% if status_filter == 'not_started' %}border-slate-900 ring-1 ring-slate-900{% else %}border-slate-200 hover:border-slate-300{% endif %}">
+      <div class="flex items-center justify-between">
+        <span class="flex h-9 w-9 items-center justify-center rounded-lg text-rose-600 bg-rose-50">
+          <i data-lucide="alert-circle" class="h-[17px] w-[17px]"></i>
+        </span>
+        <span class="text-2xl font-semibold text-slate-900">{{ counts.not_started }}</span>
+      </div>
+      <p class="mt-3 text-sm font-medium text-slate-600">Not Started</p>
+    </a>
+  </div>
+
+  <div class="mx-8 mt-6 rounded-xl border border-slate-200 bg-white">
+    <form method="get" class="flex items-center gap-3 border-b border-slate-100 px-5 py-3.5">
+      {% if status_filter != 'all' %}<input type="hidden" name="status" value="{{ status_filter }}">{% endif %}
+      <div class="relative flex-1 max-w-xs">
+        <i data-lucide="search" class="absolute left-3 top-1/2 h-[15px] w-[15px] -translate-y-1/2 text-slate-400"></i>
+        <input type="text" name="q" value="{{ query }}" placeholder="Search name or PAN..."
+               class="w-full rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-8 pr-3 text-sm outline-none focus:border-slate-300 focus:bg-white">
+      </div>
+      {% if status_filter != 'all' %}
+      <a href="?{% if query %}q={{ query }}{% endif %}" class="flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs text-slate-500 hover:bg-slate-50">
+        <i data-lucide="filter" class="h-3 w-3"></i> Clear filter
+      </a>
+      {% endif %}
+      <span class="ml-auto text-xs text-slate-400">{{ rows|length }} shown</span>
+    </form>
+
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-400">
+          <th class="px-5 py-2.5 font-medium">Client</th>
+          <th class="px-5 py-2.5 font-medium">PAN</th>
+          <th class="px-5 py-2.5 font-medium">Categories</th>
+          <th class="px-5 py-2.5 font-medium">Status</th>
+          <th class="px-5 py-2.5"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for client, status in rows %}
+        <tr onclick="window.location='{% url 'portal:client_detail' client.pk %}'" class="cursor-pointer border-b border-slate-50 last:border-0 hover:bg-slate-50">
+          <td class="px-5 py-3 font-medium text-slate-800">{{ client.name }}</td>
+          <td class="px-5 py-3 font-mono text-xs text-slate-500">{{ client.pan }}</td>
+          <td class="px-5 py-3">
+            <div class="flex flex-wrap gap-1">
+              {% for cat in client.categories.all %}
+              <span class="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] text-slate-600">{{ cat.name }}</span>
+              {% endfor %}
+            </div>
+          </td>
+          <td class="px-5 py-3">
+            <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ring-1
+              {% if status.status == 'ready' %}bg-emerald-50 text-emerald-700 ring-emerald-200
+              {% elif status.status == 'in_progress' %}bg-amber-50 text-amber-700 ring-amber-200
+              {% else %}bg-rose-50 text-rose-700 ring-rose-200{% endif %}">
+              <span class="h-1.5 w-1.5 rounded-full
+                {% if status.status == 'ready' %}bg-emerald-500
+                {% elif status.status == 'in_progress' %}bg-amber-500
+                {% else %}bg-rose-500{% endif %}"></span>
+              {{ status.label }}
+            </span>
+          </td>
+          <td class="px-5 py-3 text-right"><i data-lucide="chevron-right" class="inline h-[15px] w-[15px] text-slate-300"></i></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="h-8"></div>
+</div>
+{% endblock %}

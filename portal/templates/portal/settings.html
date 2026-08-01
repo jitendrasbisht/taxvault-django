@@ -1,0 +1,59 @@
+{% extends "portal/base.html" %}
+{% block title %}Settings — TaxVault{% endblock %}
+
+{% block content %}
+<div class="flex-1 overflow-auto">
+  <div class="border-b border-slate-200 bg-white px-8 py-6">
+    <h1 class="text-xl font-semibold text-slate-900">Settings</h1>
+    <p class="mt-0.5 text-sm text-slate-500">Firm Admin only &mdash; category mappings, DocCode table, and staff.</p>
+  </div>
+
+  <div class="grid grid-cols-2 gap-6 px-8 py-6">
+    <div class="rounded-xl border border-slate-200 bg-white p-5">
+      <div class="mb-3 flex items-center justify-between">
+        <h2 class="text-sm font-semibold text-slate-800">Categories &rarr; Required DocCodes</h2>
+        <a href="/admin/clients/category/" class="text-xs font-medium text-sky-600 hover:underline">Manage &rarr;</a>
+      </div>
+      <div class="space-y-3">
+        {% for category in categories %}
+        <div>
+          <p class="text-sm font-medium text-slate-700">{{ category.name }}</p>
+          <div class="mt-1 flex flex-wrap gap-1">
+            {% for dc in category.doc_codes.all %}
+            <span class="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[10.5px] text-slate-600">{{ dc.code }}</span>
+            {% empty %}
+            <span class="text-[11px] text-slate-300">none configured</span>
+            {% endfor %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="rounded-xl border border-slate-200 bg-white p-5">
+      <div class="mb-3 flex items-center justify-between">
+        <h2 class="text-sm font-semibold text-slate-800">DocCode Table</h2>
+        <a href="/admin/clients/doccode/" class="text-xs font-medium text-sky-600 hover:underline">Manage &rarr;</a>
+      </div>
+      <div class="space-y-1.5">
+        {% for dc in doc_codes %}
+        <div class="flex items-center justify-between text-xs">
+          <span class="font-mono text-slate-500">{{ dc.code }}</span>
+          <span class="text-slate-600">{{ dc.display_name }}</span>
+          {% if dc.is_base %}<span class="rounded bg-sky-50 px-1.5 py-0.5 text-[10px] text-sky-600">base</span>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="rounded-xl border border-slate-200 bg-white p-5">
+      <div class="mb-3 flex items-center justify-between">
+        <h2 class="text-sm font-semibold text-slate-800">Staff</h2>
+        <a href="/admin/clients/userprofile/" class="text-xs font-medium text-sky-600 hover:underline">Manage &rarr;</a>
+      </div>
+      <p class="text-xs text-slate-400">Add or review Firm Admin / Staff logins for {{ profile.firm.name }}.</p>
+    </div>
+  </div>
+  <div class="h-8"></div>
+</div>
+{% endblock %}

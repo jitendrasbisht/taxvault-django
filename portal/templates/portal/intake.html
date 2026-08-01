@@ -1,0 +1,69 @@
+{% extends "portal/base.html" %}
+{% block title %}Document Intake — TaxVault{% endblock %}
+
+{% block content %}
+<div class="flex-1 overflow-auto">
+  <div class="border-b border-slate-200 bg-white px-8 py-6">
+    <h1 class="text-xl font-semibold text-slate-900">Document Intake</h1>
+    <p class="mt-0.5 text-sm text-slate-500">Point at a folder of mixed documents &mdash; TaxVault reads, matches, classifies, and files each one.</p>
+  </div>
+
+  <div class="px-8 py-6">
+    <div class="rounded-xl border-2 border-dashed border-slate-300 bg-white p-10 text-center">
+      <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-100">
+        <i data-lucide="upload" class="h-5 w-5 text-slate-500"></i>
+      </div>
+      <p class="mt-4 text-sm font-medium text-slate-700">Enter the folder path to process</p>
+      <p class="mt-1 text-xs text-slate-400">Accepts up to 700 mixed files &middot; PDF, JPG, PNG</p>
+
+      <form method="post" class="mx-auto mt-6 max-w-sm space-y-3">
+        {% csrf_token %}
+        <input type="text" name="folder_path" required placeholder="C:\path\to\downloads_doc"
+               class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-slate-300 focus:bg-white">
+        <div class="flex items-center gap-2">
+          <label class="text-xs font-medium text-slate-500">Assessment Year</label>
+          <input type="text" name="ay" value="{{ ay }}" class="flex-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs">
+        </div>
+        <button type="submit" class="mt-2 w-full rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-slate-800">
+          Start Batch
+        </button>
+      </form>
+    </div>
+
+    {% if recent_batches %}
+    <div class="mt-6 rounded-xl border border-slate-200 bg-white">
+      <div class="border-b border-slate-100 px-5 py-3">
+        <h2 class="text-sm font-semibold text-slate-800">Recent Batches</h2>
+      </div>
+      <table class="w-full text-xs">
+        <thead>
+          <tr class="border-b border-slate-100 text-left uppercase tracking-wide text-slate-400">
+            <th class="px-5 py-2 font-medium">Batch</th>
+            <th class="px-3 py-2 font-medium">AY</th>
+            <th class="px-3 py-2 font-medium">Found</th>
+            <th class="px-3 py-2 font-medium">Filed</th>
+            <th class="px-3 py-2 font-medium">Review</th>
+            <th class="px-3 py-2 font-medium">Skipped</th>
+            <th class="px-3 py-2 font-medium">Started</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for batch in recent_batches %}
+          <tr onclick="window.location='{% url 'portal:batch_detail' batch.pk %}'" class="cursor-pointer border-b border-slate-50 last:border-0 hover:bg-slate-50">
+            <td class="px-5 py-2.5 font-medium text-slate-700">#{{ batch.pk }}</td>
+            <td class="px-3 py-2.5 text-slate-500">{{ batch.ay }}</td>
+            <td class="px-3 py-2.5 text-slate-500">{{ batch.files_found }}</td>
+            <td class="px-3 py-2.5 text-emerald-600">{{ batch.files_filed }}</td>
+            <td class="px-3 py-2.5 text-rose-500">{{ batch.files_review }}</td>
+            <td class="px-3 py-2.5 text-slate-400">{{ batch.files_skipped }}</td>
+            <td class="px-3 py-2.5 text-slate-400">{{ batch.created_at|date:"M j, H:i" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+  </div>
+  <div class="h-8"></div>
+</div>
+{% endblock %}

@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}TaxVault{% endblock %}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+</head>
+<body class="h-screen overflow-hidden bg-slate-50 font-sans antialiased">
+  <div class="flex h-screen w-full overflow-hidden">
+    <!-- Sidebar -->
+    <div class="flex w-56 shrink-0 flex-col bg-slate-950 p-4">
+      <div class="mb-6 flex items-center gap-2 px-1">
+        <div class="flex h-7 w-7 items-center justify-center rounded-md bg-sky-500 text-xs font-bold text-white">TV</div>
+        <span class="text-sm font-bold tracking-wide text-white">TaxVault</span>
+      </div>
+      <div class="space-y-1">
+        {% url 'portal:dashboard' as dashboard_url %}
+        {% url 'portal:intake' as intake_url %}
+        {% url 'portal:review_queue' as review_url %}
+        {% url 'portal:reminders' as reminders_url %}
+        {% url 'portal:settings' as settings_url %}
+
+        <a href="{{ dashboard_url }}" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors {% if active_nav == 'dashboard' %}bg-white/10 font-medium text-white{% else %}text-slate-300 hover:bg-white/5 hover:text-white{% endif %}">
+          <i data-lucide="layout-dashboard" class="h-[17px] w-[17px]"></i>
+          <span class="flex-1 text-left">Dashboard</span>
+        </a>
+        <a href="{{ intake_url }}" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors {% if active_nav == 'intake' %}bg-white/10 font-medium text-white{% else %}text-slate-300 hover:bg-white/5 hover:text-white{% endif %}">
+          <i data-lucide="upload" class="h-[17px] w-[17px]"></i>
+          <span class="flex-1 text-left">Document Intake</span>
+        </a>
+        <a href="{{ dashboard_url }}" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors {% if active_nav == 'dashboard' %}bg-white/10 font-medium text-white{% else %}text-slate-300 hover:bg-white/5 hover:text-white{% endif %}">
+          <i data-lucide="users" class="h-[17px] w-[17px]"></i>
+          <span class="flex-1 text-left">Clients</span>
+          <span class="rounded-full px-1.5 py-0.5 text-[11px] {% if active_nav == 'dashboard' %}bg-white/20 text-white{% else %}bg-white/10 text-slate-300{% endif %}">{{ nav_client_count }}</span>
+        </a>
+        <a href="{{ review_url }}" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors {% if active_nav == 'review' %}bg-white/10 font-medium text-white{% else %}text-slate-300 hover:bg-white/5 hover:text-white{% endif %}">
+          <i data-lucide="inbox" class="h-[17px] w-[17px]"></i>
+          <span class="flex-1 text-left">Review Queue</span>
+          <span class="rounded-full px-1.5 py-0.5 text-[11px] {% if active_nav == 'review' %}bg-white/20 text-white{% else %}bg-white/10 text-slate-300{% endif %}">{{ nav_review_count }}</span>
+        </a>
+        <a href="{{ reminders_url }}" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors {% if active_nav == 'reminders' %}bg-white/10 font-medium text-white{% else %}text-slate-300 hover:bg-white/5 hover:text-white{% endif %}">
+          <i data-lucide="mail" class="h-[17px] w-[17px]"></i>
+          <span class="flex-1 text-left">Reminders</span>
+        </a>
+        <a href="{{ settings_url }}" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors {% if active_nav == 'settings' %}bg-white/10 font-medium text-white{% else %}text-slate-300 hover:bg-white/5 hover:text-white{% endif %}">
+          <i data-lucide="settings" class="h-[17px] w-[17px]"></i>
+          <span class="flex-1 text-left">Settings</span>
+        </a>
+      </div>
+      <div class="mt-auto rounded-lg bg-white/5 p-3">
+        <p class="text-[11px] font-medium text-slate-300">{{ profile.get_role_display }}</p>
+        <p class="mt-0.5 text-xs text-white">{{ request.user.get_full_name|default:request.user.username }} &middot; {{ profile.firm.name }}</p>
+        <form method="post" action="{% url 'portal:logout' %}" class="mt-2">
+          {% csrf_token %}
+          <button type="submit" class="text-[11px] text-slate-400 hover:text-white">Log out</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div class="flex flex-1 flex-col overflow-hidden">
+      {% if messages %}
+      <div class="space-y-2 p-4">
+        {% for message in messages %}
+        <div class="rounded-lg border px-4 py-2.5 text-sm {% if message.tags == 'success' %}border-emerald-200 bg-emerald-50 text-emerald-700{% elif message.tags == 'error' %}border-rose-200 bg-rose-50 text-rose-700{% else %}border-sky-200 bg-sky-50 text-sky-700{% endif %}">
+          {{ message }}
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+
+  <script>lucide.createIcons();</script>
+</body>
+</html>

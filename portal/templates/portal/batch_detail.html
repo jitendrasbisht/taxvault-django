@@ -1,0 +1,74 @@
+{% extends "portal/base.html" %}
+{% block title %}Batch #{{ batch.pk }} — TaxVault{% endblock %}
+
+{% block content %}
+<div class="flex-1 overflow-auto">
+  <div class="border-b border-slate-200 bg-white px-8 py-6">
+    <a href="{% url 'portal:intake' %}" class="mb-3 flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700">
+      <i data-lucide="arrow-left" class="h-3.5 w-3.5"></i> Process another batch
+    </a>
+    <h1 class="text-xl font-semibold text-slate-900">Batch #{{ batch.pk }} &mdash; AY {{ batch.ay }}</h1>
+    <p class="mt-0.5 text-sm text-slate-500">{{ batch.folder_path }}</p>
+  </div>
+
+  <div class="px-8 py-6">
+    <div class="grid grid-cols-4 gap-4">
+      <div class="rounded-xl border border-slate-200 bg-white p-4">
+        <p class="text-2xl font-semibold text-slate-900">{{ batch.files_found }}</p>
+        <p class="mt-1 text-xs text-slate-500">Files found</p>
+      </div>
+      <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+        <p class="text-2xl font-semibold text-emerald-700">{{ batch.files_filed }}</p>
+        <p class="mt-1 text-xs text-emerald-600">Filed</p>
+      </div>
+      <div class="rounded-xl border border-rose-200 bg-rose-50 p-4">
+        <p class="text-2xl font-semibold text-rose-700">{{ batch.files_review }}</p>
+        <p class="mt-1 text-xs text-rose-600">Sent to Review Queue</p>
+      </div>
+      <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <p class="text-2xl font-semibold text-slate-600">{{ batch.files_skipped }}</p>
+        <p class="mt-1 text-xs text-slate-500">Skipped</p>
+      </div>
+    </div>
+
+    <div class="mt-6 rounded-xl border border-slate-200 bg-white">
+      <div class="border-b border-slate-100 px-5 py-3">
+        <h2 class="text-sm font-semibold text-slate-800">Processing Results</h2>
+      </div>
+      <table class="w-full text-xs">
+        <thead>
+          <tr class="border-b border-slate-100 text-left uppercase tracking-wide text-slate-400">
+            <th class="px-5 py-2 font-medium">Original File</th>
+            <th class="px-3 py-2 font-medium">Matched Client</th>
+            <th class="px-3 py-2 font-medium">DocCode</th>
+            <th class="px-3 py-2 font-medium">Method</th>
+            <th class="px-3 py-2 font-medium"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for doc in documents %}
+          <tr class="border-b border-slate-50 last:border-0">
+            <td class="max-w-[140px] truncate px-5 py-2.5 font-mono text-slate-500" title="{{ doc.original_filename }}">{{ doc.original_filename }}</td>
+            <td class="px-3 py-2.5 text-slate-700">{{ doc.client|default:"—" }}</td>
+            <td class="px-3 py-2.5">
+              {% if doc.doc_code %}<span class="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[10.5px] text-slate-600">{{ doc.doc_code.code }}</span>{% else %}&mdash;{% endif %}
+            </td>
+            <td class="px-3 py-2.5 text-slate-400">{{ doc.get_extraction_method_display }}</td>
+            <td class="px-3 py-2.5">
+              {% if doc.status == 'filed' and not doc.review_reason %}
+              <span class="flex items-center gap-1 text-emerald-600"><i data-lucide="check-circle-2" class="h-3 w-3"></i> Filed</span>
+              {% elif doc.status == 'filed' %}
+              <span class="flex items-center gap-1 text-amber-600"><i data-lucide="alert-circle" class="h-3 w-3"></i> MISC</span>
+              {% else %}
+              <span class="flex items-center gap-1 text-rose-500"><i data-lucide="inbox" class="h-3 w-3"></i> Review</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="h-8"></div>
+</div>
+{% endblock %}

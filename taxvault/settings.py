@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'django_q',
     'clients',
     'documents',
+    'portal',
 ]
 
 # Local filesystem stand-in for Cloudflare R2 (Section 17) until credentials are provided.
@@ -90,6 +91,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'portal.context_processors.nav_counts',
             ],
         },
     },
@@ -167,3 +169,10 @@ EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@taxvault.local')
+
+
+# Staff-facing UI (portal app) — real screens matching TaxVault_POC.jsx's layout, replacing
+# the Django admin interim UI used while the backend was being built.
+LOGIN_URL = 'portal:login'
+LOGIN_REDIRECT_URL = 'portal:dashboard'
+LOGOUT_REDIRECT_URL = 'portal:login'
