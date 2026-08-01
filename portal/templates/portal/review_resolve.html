@@ -41,16 +41,12 @@
       <form method="post" class="space-y-4">
         {% csrf_token %}
         {% if not document.client %}
-        <div>
+        <div class="relative">
           <label class="mb-1 block text-xs font-medium text-slate-500">Client</label>
-          <input type="text" id="client-search" list="clients-datalist" autocomplete="off"
+          <input type="text" id="client-search" autocomplete="off"
                  placeholder="Search by name or PAN…"
                  class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-slate-300 focus:bg-white">
-          <datalist id="clients-datalist">
-            {% for c in clients %}
-            <option data-id="{{ c.pk }}" value="{{ c.name }} — {{ c.pan }}"></option>
-            {% endfor %}
-          </datalist>
+          <div id="client-options" class="absolute z-10 mt-1 hidden max-h-56 w-full overflow-auto rounded-lg border border-slate-200 bg-white shadow-lg"></div>
           <input type="hidden" name="client" id="client-id-input" required>
         </div>
         {% endif %}
@@ -76,10 +72,42 @@
   var search = document.getElementById('client-search');
   if (!search) return;
   var hidden = document.getElementById('client-id-input');
-  var options = Array.prototype.slice.call(document.querySelectorAll('#clients-datalist option'));
+  var box = document.getElementById('client-options');
+  var clients = [
+    {% for c in clients %}
+    {id: "{{ c.pk }}", label: {{ c.name|escapejs }} + " — " + {{ c.pan|escapejs }}},
+    {% endfor %}
+  ];
+
+  function renderOptions(matches) {
+    box.innerHTML = '';
+    if (!matches.length) { box.classList.add('hidden'); return; }
+    matches.slice(0, 25).forEach(function (c) {
+      var item = document.createElement('div');
+      item.textContent = c.label;
+      item.className = 'cursor-pointer px-3 py-2 text-sm text-slate-700 hover:bg-slate-50';
+      item.addEventListener('mousedown', function (e) {
+        e.preventDefault();
+        search.value = c.label;
+        hidden.value = c.id;
+        box.classList.add('hidden');
+      });
+      box.appendChild(item);
+    });
+    box.classList.remove('hidden');
+  }
+
   search.addEventListener('input', function () {
-    var match = options.find(function (o) { return o.value === search.value; });
-    hidden.value = match ? match.dataset.id : '';
+    hidden.value = '';
+    var q = search.value.trim().toLowerCase();
+    if (!q) { box.classList.add('hidden'); return; }
+    renderOptions(clients.filter(function (c) { return c.label.toLowerCase().indexOf(q) !== -1; }));
+  });
+
+  document.addEventListener('click', function (e) {
+    if (e.target !== search && !box.contains(e.target)) {
+      box.classList.add('hidden');
+    }
   });
 })();
 </script>
