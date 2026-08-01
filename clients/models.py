@@ -141,3 +141,24 @@ class Client(models.Model):
         base = DocCode.objects.filter(firm=self.firm, is_base=True)
         from_categories = DocCode.objects.filter(categories__in=self.categories.all())
         return (base | from_categories).distinct()
+
+
+class ReminderLog(models.Model):
+    """Section 11: simple send log (client, stage, date sent) -- visibility into reminder
+    history so staff can see what's already gone out. Created only by an actual send, never
+    manually."""
+
+    STAGE_INITIAL = "initial"
+    STAGE_FOLLOWUP = "followup"
+    STAGE_CHOICES = [
+        (STAGE_INITIAL, "Initial Request"),
+        (STAGE_FOLLOWUP, "Follow-up"),
+    ]
+
+    firm = models.ForeignKey(Firm, on_delete=models.CASCADE, related_name="reminder_logs")
+    client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name="reminder_logs")
+    stage = models.CharField(max_length=10, choices=STAGE_CHOICES)
+    sent_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.client.pan} — {self.get_stage_display()} — {self.sent_at:%Y-%m-%d}"

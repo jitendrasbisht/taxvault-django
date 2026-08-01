@@ -8,7 +8,8 @@ from django.urls import path
 from django.utils.html import format_html
 
 from .forms import FirmUserAddForm, ManualClientAddForm
-from .models import Category, Client, DocCode, Firm, UserProfile
+from .models import Category, Client, DocCode, Firm, ReminderLog, UserProfile
+from .reminders import send_followup, send_initial_request
 from .services import ClientDataError, FirmUserError, create_firm_user, upsert_client
 
 # documents depends on clients, never the reverse for models — but admin.py loads after
@@ -190,10 +191,29 @@ class ClientAdmin(ProfileRequiredMixin, FirmScopedAdminMixin, admin.ModelAdmin):
     list_display = ("pan", "name", "phone", "email", "firm", "aadhar_masked", "itr_status_display", "download_all_link")
     list_filter = (FirmScopedCategoryFilter, ITRStatusFilter)
     search_fields = ("pan", "name", "phone")
+    actions = ["send_initial_request_action", "send_followup_action"]
 
     @admin.display(description="ITR Status")
     def itr_status_display(self, obj):
         return compute_itr_status(obj).label
+
+    @admin.action(description="Section 11 Stage 1: Send Initial Request")
+    def send_initial_request_action(self, request, queryset):
+        count = 0
+        for client in queryset:
+            send_initial_request(client)
+            count += 1
+        messages.success(request, f"Sent initial request to {count} client(s).")
+
+    @admin.action(description="Section 11 Stage 2: Send Follow-up Reminder")
+    def send_followup_action(self, request, queryset):
+        sent, skipped = 0, 0
+        for client in queryset:
+            if send_followup(client):
+                sent += 1
+            else:
+                skipped += 1
+        messages.success(request, f"Sent follow-up to {sent} client(s); {skipped} already Ready, skipped.")
 
     @admin.display(description="Documents")
     def download_all_link(self, obj):
@@ -306,3 +326,21 @@ class UserProfileAdmin(FirmAdminOnlyMixin, FirmScopedAdminMixin, admin.ModelAdmi
             "opts": self.model._meta,
         }
         return render(request, "admin/clients/userprofile_add_staff.html", context)
+
+
+@admin.register(ReminderLog)
+class ReminderLogAdmin(ProfileRequiredMixin, FirmScopedAdminMixin, admin.ModelAdmin):
+    """Section 11: read-only send log — visibility into reminder history. Entries are only
+    ever created by an actual send (send_initial_request / send_followup), never by hand."""
+
+    list_display = ("client", "stage", "sent_at", "firm")
+    list_filter = ("stage",)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False

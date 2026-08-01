@@ -155,3 +155,15 @@ STATIC_URL = 'static/'
 # expiry from login time.
 SESSION_COOKIE_AGE = 60 * 60
 SESSION_SAVE_EVERY_REQUEST = True
+
+
+# Email (Section 11/17): outbound only, transactional provider (SES/Mailgun/Postmark) via
+# SMTP -- no real credentials yet, so this defaults to Django's console backend (prints
+# emails to the runserver log) until EMAIL_BACKEND is overridden in .env.
+EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
+EMAIL_HOST = os.environ.get('EMAIL_HOST', '')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@taxvault.local')
