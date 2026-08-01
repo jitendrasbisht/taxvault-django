@@ -1,0 +1,35 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(netstat -ano)",
+      "Bash(tasklist //FI \"PID eq 8392\")",
+      "Bash(tasklist //FI \"PID eq 20828\")",
+      "Bash(docker compose *)",
+      "Bash(\"venv/Scripts/python.exe\" manage.py create_firm \"Sharma & Associates\")",
+      "Bash(\"venv/Scripts/python.exe\" manage.py import_clients 1 sample_data/sample_clients.csv)",
+      "Bash(venv/Scripts/python.exe manage.py shell -c ' *)",
+      "Bash(\"venv/Scripts/python.exe\" manage.py import_clients 1 sample_data/sample_clients_bad.csv)",
+      "Bash(git init *)",
+      "Bash(git add *)",
+      "Bash(git commit -q -m ' *)",
+      "Bash(\"venv/Scripts/python.exe\" manage.py makemigrations clients)",
+      "Bash(\"venv/Scripts/python.exe\" manage.py migrate)",
+      "Bash(\"venv/Scripts/python.exe\" manage.py import_clients 2 sample_data/sample_clients.csv)",
+      "Bash(git restore *)",
+      "Bash(\"venv/Scripts/python.exe\" manage.py check)",
+      "Bash(\"venv/Scripts/python.exe\" manage.py create_firm \"Verma & Co\")",
+      "Bash(\"venv/Scripts/python.exe\" manage.py startapp documents)",
+      "Bash(\"venv/Scripts/python.exe\" manage.py makemigrations documents)",
+      "Bash(\"venv/Scripts/python.exe\" -m pip install --quiet pypdf)",
+      "Bash(\"venv/Scripts/python.exe\" -m pip freeze)",
+      "Bash(\"venv/Scripts/python.exe\" -m pip install --quiet reportlab)",
+      "Bash(\"venv/Scripts/python.exe\" manage.py run_intake_batch 2 intake_test_folder)",
+      "Bash(\"venv/Scripts/python.exe\" -m pip uninstall -y pillow charset-normalizer --quiet)",
+      "Bash(\"venv/Scripts/python.exe\" -m pip install --quiet django-q2 redis)",
+      "Bash(git commit *)",
+      "Read(//dev/**)",
+      "Bash(curl -s -D - -o /dev/null \"http://localhost:8000/admin/documents/document/3/preview/\" -H \"Cookie: $\\(cat /dev/null\\)\")",
+      "Bash(git status *)"
+    ]
+  }
+}
