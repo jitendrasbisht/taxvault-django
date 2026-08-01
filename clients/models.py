@@ -1,6 +1,7 @@
 import hashlib
 import re
 
+from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 from django.db import models
@@ -24,11 +25,32 @@ class Firm(models.Model):
         return self.name
 
 
+class DocCode(models.Model):
+    """Configurable, per-firm DocCode table (Section 6): code, friendly display name, and the
+    keywords used for keyword-based classification. is_base marks the Section 5 base documents
+    (AIS, 26AS) required for every client regardless of category."""
+
+    firm = models.ForeignKey(Firm, on_delete=models.CASCADE, related_name="doc_codes")
+    code = models.CharField(max_length=20)
+    display_name = models.CharField(max_length=255)
+    keywords = ArrayField(models.CharField(max_length=100), default=list, blank=True)
+    is_base = models.BooleanField(default=False)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["firm", "code"], name="unique_doccode_per_firm"),
+        ]
+
+    def __str__(self):
+        return self.code
+
+
 class Category(models.Model):
     """Configurable, per-firm category tag (Section 5 / Section 13). Not a fixed choices field."""
 
     firm = models.ForeignKey(Firm, on_delete=models.CASCADE, related_name="categories")
     name = models.CharField(max_length=100)
+    doc_codes = models.ManyToManyField(DocCode, related_name="categories", blank=True)
 
     class Meta:
         verbose_name_plural = "categories"
@@ -83,3 +105,9 @@ class Client(models.Model):
             raise ValidationError({"aadhar": "Aadhar must be exactly 12 digits."})
         self.aadhar_hash = hashlib.sha256(digits.encode()).hexdigest()
         self.aadhar_masked = f"XXXX-XXXX-{digits[-4:]}"
+
+    def required_doc_codes(self):
+        """Required Docs = Base + union of DocCodes from tagged categories (Section 5)."""
+        base = DocCode.objects.filter(firm=self.firm, is_base=True)
+        from_categories = DocCode.objects.filter(categories__in=self.categories.all())
+        return (base | from_categories).distinct()
