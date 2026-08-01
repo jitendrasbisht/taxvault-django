@@ -75,7 +75,7 @@
   var box = document.getElementById('client-options');
   var clients = [
     {% for c in clients %}
-    {id: "{{ c.pk }}", label: {{ c.name|escapejs }} + " — " + {{ c.pan|escapejs }}},
+    {id: "{{ c.pk }}", label: "{{ c.name|escapejs }} — {{ c.pan|escapejs }}"},
     {% endfor %}
   ];
 
