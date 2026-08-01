@@ -1,6 +1,11 @@
+import io
+import zipfile
+
 from django.contrib import admin, messages
+from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import path
+from django.utils.html import format_html
 
 from .forms import FirmUserAddForm, ManualClientAddForm
 from .models import Category, Client, DocCode, Firm, UserProfile
@@ -8,7 +13,9 @@ from .services import ClientDataError, FirmUserError, create_firm_user, upsert_c
 
 # documents depends on clients, never the reverse for models — but admin.py loads after
 # all apps' models are ready, so this cross-app import here is safe.
+from documents.models import Document
 from documents.status import compute_itr_status
+from documents.storage import absolute_path
 
 
 def _get_profile(request):
@@ -180,7 +187,7 @@ class CategoryAdmin(FirmAdminOnlyMixin, FirmScopedAdminMixin, admin.ModelAdmin):
 
 @admin.register(Client)
 class ClientAdmin(ProfileRequiredMixin, FirmScopedAdminMixin, admin.ModelAdmin):
-    list_display = ("pan", "name", "phone", "firm", "aadhar_masked", "itr_status_display")
+    list_display = ("pan", "name", "phone", "firm", "aadhar_masked", "itr_status_display", "download_all_link")
     list_filter = (FirmScopedCategoryFilter, ITRStatusFilter)
     search_fields = ("pan", "name", "phone")
 
@@ -188,11 +195,35 @@ class ClientAdmin(ProfileRequiredMixin, FirmScopedAdminMixin, admin.ModelAdmin):
     def itr_status_display(self, obj):
         return compute_itr_status(obj).label
 
+    @admin.display(description="Documents")
+    def download_all_link(self, obj):
+        return format_html('<a href="{}/download-zip/">Download All</a>', obj.pk)
+
     def get_urls(self):
         custom_urls = [
             path("manual-add/", self.admin_site.admin_view(self.manual_add_view), name="clients_client_manual_add"),
+            path("<int:pk>/download-zip/", self.admin_site.admin_view(self.download_zip_view), name="clients_client_download_zip"),
         ]
         return custom_urls + super().get_urls()
+
+    def download_zip_view(self, request, pk):
+        """Section 15: "Download all documents for a client" as a zip."""
+        client = self.get_object(request, pk)
+        if client is None:
+            messages.error(request, "Client not found.")
+            return redirect("admin:clients_client_changelist")
+
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, "w") as zf:
+            for doc in Document.objects.filter(client=client, status=Document.STATUS_FILED):
+                file_path = absolute_path(doc.storage_path)
+                if file_path.exists():
+                    zf.write(file_path, arcname=file_path.name)
+        buffer.seek(0)
+
+        response = HttpResponse(buffer.getvalue(), content_type="application/zip")
+        response["Content-Disposition"] = f'attachment; filename="{client.pan}_documents.zip"'
+        return response
 
     def manual_add_view(self, request):
         """Manual individual add (Section 2) — same fields, routed through the same

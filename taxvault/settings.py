@@ -148,3 +148,10 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+
+
+# Session (Section 15): 60 minutes from last activity/click. SESSION_SAVE_EVERY_REQUEST
+# makes this a sliding expiry -- every request resets the countdown -- rather than a fixed
+# expiry from login time.
+SESSION_COOKIE_AGE = 60 * 60
+SESSION_SAVE_EVERY_REQUEST = True

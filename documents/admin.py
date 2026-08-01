@@ -1,8 +1,11 @@
+import mimetypes
 from pathlib import Path
 
 from django.contrib import admin, messages
+from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import path
+from django.utils.html import format_html
 from django_q.tasks import async_task
 
 from clients.admin import FirmScopedAdminMixin, ProfileRequiredMixin, _get_profile
@@ -10,6 +13,7 @@ from clients.admin import FirmScopedAdminMixin, ProfileRequiredMixin, _get_profi
 from .forms import ReviewResolutionForm, StartBatchForm
 from .models import Batch, Document
 from .services import ReviewResolutionError, resolve_review_document
+from .storage import absolute_path
 
 
 @admin.register(Batch)
@@ -64,18 +68,39 @@ class BatchAdmin(ProfileRequiredMixin, FirmScopedAdminMixin, admin.ModelAdmin):
 
 @admin.register(Document)
 class DocumentAdmin(ProfileRequiredMixin, FirmScopedAdminMixin, admin.ModelAdmin):
-    list_display = ("original_filename", "client", "doc_code", "status", "ay", "firm", "review_reason")
+    list_display = ("original_filename", "client", "doc_code", "status", "ay", "firm", "review_reason", "preview_link")
     list_filter = ("status", "ay")
     search_fields = ("original_filename", "detected_pan")
 
     def has_add_permission(self, request):
         return False
 
+    @admin.display(description="Preview")
+    def preview_link(self, obj):
+        return format_html('<a href="{}/preview/" target="_blank">Preview</a>', obj.pk)
+
     def get_urls(self):
         custom_urls = [
             path("<int:pk>/resolve/", self.admin_site.admin_view(self.resolve_view), name="documents_document_resolve"),
+            path("<int:pk>/preview/", self.admin_site.admin_view(self.preview_view), name="documents_document_preview"),
         ]
         return custom_urls + super().get_urls()
+
+    def preview_view(self, request, pk):
+        """Section 15: in-browser document preview (PDF/image). Serving the file with
+        Content-Disposition: inline lets the browser's own PDF/image viewer render it —
+        no custom viewer UI needed."""
+        document = get_object_or_404(self.get_queryset(request), pk=pk)
+        file_path = absolute_path(document.storage_path)
+        if not file_path.exists():
+            raise Http404
+        content_type, _ = mimetypes.guess_type(str(file_path))
+        return FileResponse(
+            open(file_path, "rb"),
+            content_type=content_type or "application/octet-stream",
+            filename=file_path.name,
+            as_attachment=False,
+        )
 
     def resolve_view(self, request, pk):
         document = get_object_or_404(self.get_queryset(request), pk=pk, review_reason__isnull=False)

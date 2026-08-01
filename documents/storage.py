@@ -81,3 +81,9 @@ def move_within_vault(old_relative_path: str, new_relative_path: str) -> str:
     dest.parent.mkdir(parents=True, exist_ok=True)
     shutil.move(str(src), str(dest))
     return final_relative
+
+
+def absolute_path(relative_path: str) -> Path:
+    """Section 15: resolves a stored relative path to a real file for preview/zip-download
+    to read from."""
+    return _resolve(relative_path)
