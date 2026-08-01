@@ -11,54 +11,60 @@
     <p class="mt-0.5 text-sm text-slate-500">{{ document.review_reason }}</p>
   </div>
 
-  <div class="mx-8 mt-6 max-w-lg rounded-xl border border-slate-200 bg-white p-6">
-    <dl class="mb-5 grid grid-cols-2 gap-3 text-xs">
-      <div>
-        <dt class="text-slate-400">Detected PAN</dt>
-        <dd class="font-mono text-slate-700">{{ document.detected_pan|default:"—" }}</dd>
-      </div>
-      <div>
-        <dt class="text-slate-400">Detected Aadhar</dt>
-        <dd class="font-mono text-slate-700">{{ document.detected_aadhar_masked|default:"—" }}</dd>
-      </div>
-      <div>
-        <dt class="text-slate-400">Detected Phone</dt>
-        <dd class="font-mono text-slate-700">{{ document.detected_phone|default:"—" }}</dd>
-      </div>
-      {% if document.client %}
-      <div>
-        <dt class="text-slate-400">Matched client</dt>
-        <dd class="text-slate-700">{{ document.client }}</dd>
-      </div>
-      {% endif %}
-    </dl>
+  <div class="grid grid-cols-5 gap-6 px-8 py-6">
+    <div class="col-span-3 rounded-xl border border-slate-200 bg-white p-2" style="height: 75vh;">
+      <iframe src="/admin/documents/document/{{ document.pk }}/preview/" class="h-full w-full rounded-lg" title="Document preview"></iframe>
+    </div>
 
-    <form method="post" class="space-y-4">
-      {% csrf_token %}
-      {% if not document.client %}
-      <div>
-        <label class="mb-1 block text-xs font-medium text-slate-500">Client</label>
-        <select name="client" required class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
-          <option value="">Select a client&hellip;</option>
-          {% for c in clients %}
-          <option value="{{ c.pk }}">{{ c.pan }} — {{ c.name }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      {% endif %}
-      <div>
-        <label class="mb-1 block text-xs font-medium text-slate-500">DocCode</label>
-        <select name="doc_code" required class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
-          <option value="">Select a DocCode&hellip;</option>
-          {% for dc in doc_codes %}
-          <option value="{{ dc.pk }}" {% if document.doc_code_id == dc.pk %}selected{% endif %}>{{ dc.code }} — {{ dc.display_name }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <button type="submit" class="w-full rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-slate-800">
-        Resolve &amp; File
-      </button>
-    </form>
+    <div class="col-span-2 rounded-xl border border-slate-200 bg-white p-6 self-start">
+      <dl class="mb-5 grid grid-cols-2 gap-3 text-xs">
+        <div>
+          <dt class="text-slate-400">Detected PAN</dt>
+          <dd class="font-mono text-slate-700">{{ document.detected_pan|default:"—" }}</dd>
+        </div>
+        <div>
+          <dt class="text-slate-400">Detected Aadhar</dt>
+          <dd class="font-mono text-slate-700">{{ document.detected_aadhar_masked|default:"—" }}</dd>
+        </div>
+        <div>
+          <dt class="text-slate-400">Detected Phone</dt>
+          <dd class="font-mono text-slate-700">{{ document.detected_phone|default:"—" }}</dd>
+        </div>
+        {% if document.client %}
+        <div>
+          <dt class="text-slate-400">Matched client</dt>
+          <dd class="text-slate-700">{{ document.client }}</dd>
+        </div>
+        {% endif %}
+      </dl>
+
+      <form method="post" class="space-y-4">
+        {% csrf_token %}
+        {% if not document.client %}
+        <div>
+          <label class="mb-1 block text-xs font-medium text-slate-500">Client</label>
+          <select name="client" required class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
+            <option value="">Select a client&hellip;</option>
+            {% for c in clients %}
+            <option value="{{ c.pk }}">{{ c.pan }} — {{ c.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        {% endif %}
+        <div>
+          <label class="mb-1 block text-xs font-medium text-slate-500">DocCode</label>
+          <select name="doc_code" required class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
+            <option value="">Select a DocCode&hellip;</option>
+            {% for dc in doc_codes %}
+            <option value="{{ dc.pk }}" {% if document.doc_code_id == dc.pk %}selected{% endif %}>{{ dc.code }} — {{ dc.display_name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <button type="submit" class="w-full rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-slate-800">
+          Resolve &amp; File
+        </button>
+      </form>
+    </div>
   </div>
   <div class="h-8"></div>
 </div>
