@@ -9,7 +9,10 @@ from pypdf import PdfReader
 from clients.models import AADHAR_DIGITS_REGEX, PAN_REGEX, Client, hash_aadhar_digits
 
 _AADHAR_TEXT_RE = re.compile(r"\b\d{4}[\s-]?\d{4}[\s-]?\d{4}\b")
-_PHONE_TEXT_RE = re.compile(r"(?:\+91[-\s]?|0)?([6-9]\d{9})\b")
+# (?<!\d)/(?!\d) instead of \b on the leading edge: a plain \b would still let this match
+# start in the middle of a longer digit run (e.g. a bank account number), since \b only
+# checks a word/non-word transition and digits are all "word" characters to regex.
+_PHONE_TEXT_RE = re.compile(r"(?<!\d)(?:\+91[-\s]?|0)?([6-9]\d{9})(?!\d)")
 _PAN_TEXT_RE = re.compile(r"\b[A-Z]{5}[0-9]{4}[A-Z]\b")
 
 TEXT_EXTENSIONS = {".pdf"}
@@ -31,44 +34,43 @@ def extract_text_from_pdf(path) -> str:
 
 
 def detect_identifiers(text: str) -> dict:
-    """Returns whichever identifiers are found in the text — first match of each kind,
-    not exhaustive. Priority order is applied later, at match time (Section 3)."""
-    pan_match = _PAN_TEXT_RE.search(text)
-    aadhar_match = _AADHAR_TEXT_RE.search(text)
-    phone_match = _PHONE_TEXT_RE.search(text)
+    """Returns every PAN/Aadhar/phone-shaped match found in the text, in order of
+    appearance -- not just the first. Real documents like Form 16 legitimately contain more
+    than one PAN (the deductor's and the employee's), so match_client has to check each
+    exact candidate against the Client Master rather than assume the first one found is the
+    client's."""
+    pans = list(dict.fromkeys(_PAN_TEXT_RE.findall(text)))
 
-    aadhar_digits = None
-    if aadhar_match:
-        digits = re.sub(r"\D", "", aadhar_match.group())
-        if AADHAR_DIGITS_REGEX.match(digits):
-            aadhar_digits = digits
+    aadhar_digits_list = []
+    for raw in _AADHAR_TEXT_RE.findall(text):
+        digits = re.sub(r"\D", "", raw)
+        if AADHAR_DIGITS_REGEX.match(digits) and digits not in aadhar_digits_list:
+            aadhar_digits_list.append(digits)
 
-    return {
-        "pan": pan_match.group() if pan_match else None,
-        "aadhar_digits": aadhar_digits,
-        "phone": phone_match.group(1) if phone_match else None,
-    }
+    phones = list(dict.fromkeys(m for m in _PHONE_TEXT_RE.findall(text)))
+
+    return {"pans": pans, "aadhar_digits_list": aadhar_digits_list, "phones": phones}
 
 
 def match_client(firm, identifiers: dict):
-    """Priority: PAN, then Aadhar, then Phone (Section 3). No name matching, no fuzzy
-    matching — an unresolved identifier means Review Queue, never a guess."""
-    pan = identifiers.get("pan")
-    if pan and PAN_REGEX.match(pan):
-        client = Client.objects.filter(firm=firm, pan=pan).first()
-        if client:
-            return client, MATCH_PAN
+    """Priority: PAN, then Aadhar, then Phone (Section 3). Every exact candidate of the
+    higher-priority type is checked before falling back to the next type. Still no name
+    matching, no fuzzy matching — an unresolved identifier means Review Queue, never a
+    guess. Returns (client_or_None, match_method, matched_value_or_None)."""
+    for pan in identifiers.get("pans", []):
+        if PAN_REGEX.match(pan):
+            client = Client.objects.filter(firm=firm, pan=pan).first()
+            if client:
+                return client, MATCH_PAN, pan
 
-    aadhar_digits = identifiers.get("aadhar_digits")
-    if aadhar_digits:
-        client = Client.objects.filter(firm=firm, aadhar_hash=hash_aadhar_digits(aadhar_digits)).first()
+    for digits in identifiers.get("aadhar_digits_list", []):
+        client = Client.objects.filter(firm=firm, aadhar_hash=hash_aadhar_digits(digits)).first()
         if client:
-            return client, MATCH_AADHAR
+            return client, MATCH_AADHAR, digits
 
-    phone = identifiers.get("phone")
-    if phone:
+    for phone in identifiers.get("phones", []):
         client = Client.objects.filter(firm=firm, phone__endswith=phone[-10:]).first()
         if client:
-            return client, MATCH_PHONE
+            return client, MATCH_PHONE, phone
 
-    return None, MATCH_NONE
+    return None, MATCH_NONE, None

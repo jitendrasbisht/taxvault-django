@@ -17,6 +17,15 @@ def _mask_aadhar(digits):
     return f"XXXX-XXXX-{digits[-4:]}" if digits else None
 
 
+def _display_value(candidates, is_matched_type, matched_value):
+    """For the informational detected_* fields on Document: show the value that actually
+    matched, or the first candidate found if nothing matched (still useful for a human
+    reviewing the Review Queue to see what was in the document)."""
+    if is_matched_type:
+        return matched_value
+    return candidates[0] if candidates else None
+
+
 def process_batch(batch):
     """Processes every file currently in batch.folder_path. Safe to call once per batch —
     files are relocated out of the watched folder as they're handled, so nothing is
@@ -59,10 +68,14 @@ def process_batch(batch):
 
         text = extract_text_from_pdf(src_path)
         identifiers = detect_identifiers(text)
-        client, match_method = match_client(firm, identifiers)
-        detected_pan = identifiers.get("pan")
-        detected_aadhar_masked = _mask_aadhar(identifiers.get("aadhar_digits"))
-        detected_phone = identifiers.get("phone")
+        client, match_method, matched_value = match_client(firm, identifiers)
+
+        detected_pan = _display_value(identifiers["pans"], match_method == "pan", matched_value)
+        detected_aadhar_digits = _display_value(
+            identifiers["aadhar_digits_list"], match_method == "aadhar", matched_value
+        )
+        detected_aadhar_masked = _mask_aadhar(detected_aadhar_digits)
+        detected_phone = _display_value(identifiers["phones"], match_method == "phone", matched_value)
 
         possible_dup = find_possible_duplicate(firm, detected_pan, original_filename) if detected_pan else None
 
