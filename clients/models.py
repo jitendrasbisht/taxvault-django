@@ -16,6 +16,12 @@ pan_validator = RegexValidator(
 )
 
 
+def hash_aadhar_digits(digits: str) -> str:
+    """The one hashing implementation for Aadhar (Section 3) — used both when a client's
+    Aadhar is entered and when matching a detected Aadhar number from a document."""
+    return hashlib.sha256(digits.encode()).hexdigest()
+
+
 class Firm(models.Model):
     """A CA firm — the multi-tenancy boundary (Section 13). Created manually by the system admin."""
 
@@ -123,7 +129,7 @@ class Client(models.Model):
         digits = re.sub(r"\D", "", raw_aadhar)
         if not AADHAR_DIGITS_REGEX.match(digits):
             raise ValidationError({"aadhar": "Aadhar must be exactly 12 digits."})
-        self.aadhar_hash = hashlib.sha256(digits.encode()).hexdigest()
+        self.aadhar_hash = hash_aadhar_digits(digits)
         self.aadhar_masked = f"XXXX-XXXX-{digits[-4:]}"
 
     def required_doc_codes(self):

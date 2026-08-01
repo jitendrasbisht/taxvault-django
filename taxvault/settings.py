@@ -44,7 +44,13 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.postgres',
     'clients',
+    'documents',
 ]
+
+# Local filesystem stand-in for Cloudflare R2 (Section 17) until credentials are provided.
+# Everything downstream reads/writes through documents/storage.py, so swapping to R2 later
+# only touches that one module.
+VAULT_ROOT = BASE_DIR / 'vault_storage'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

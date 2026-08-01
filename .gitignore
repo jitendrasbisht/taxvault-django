@@ -7,3 +7,5 @@ db.sqlite3
 staticfiles/
 media/
 .DS_Store
+vault_storage/
+intake_test_folder/
