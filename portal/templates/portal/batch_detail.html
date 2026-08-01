@@ -58,9 +58,9 @@
               {% if doc.status == 'filed' and not doc.review_reason %}
               <span class="flex items-center gap-1 text-emerald-600"><i data-lucide="check-circle-2" class="h-3 w-3"></i> Filed</span>
               {% elif doc.status == 'filed' %}
-              <span class="flex items-center gap-1 text-amber-600"><i data-lucide="alert-circle" class="h-3 w-3"></i> MISC</span>
+              <a href="{% url 'portal:review_resolve' doc.pk %}" class="flex items-center gap-1 text-amber-600 hover:underline"><i data-lucide="alert-circle" class="h-3 w-3"></i> MISC</a>
               {% else %}
-              <span class="flex items-center gap-1 text-rose-500"><i data-lucide="inbox" class="h-3 w-3"></i> Review</span>
+              <a href="{% url 'portal:review_resolve' doc.pk %}" class="flex items-center gap-1 text-rose-500 hover:underline"><i data-lucide="inbox" class="h-3 w-3"></i> Review</a>
               {% endif %}
             </td>
           </tr>
