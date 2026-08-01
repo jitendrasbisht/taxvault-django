@@ -1,16 +1,14 @@
-"""Bulk client import (Section 2) — Excel/CSV, writing into the same Client Master table
-used by manual add. No automatic client creation logic beyond what's in this file — an
-unresolvable row is reported as an error, never guessed."""
+"""Bulk client import (Section 2) — Excel/CSV. Row parsing only; the actual create/update
+logic lives in services.upsert_client, shared with manual add so there is one logic path,
+not two, writing into the Client Master table."""
 
 import csv
 import io
 from dataclasses import dataclass, field
 
 import openpyxl
-from django.core.exceptions import ValidationError
-from django.db import transaction
 
-from .models import PAN_REGEX, Category, Client
+from .services import ClientDataError, upsert_client
 
 REQUIRED_HEADERS = {"pan", "name", "phone"}
 HEADER_ALIASES = {
@@ -80,7 +78,6 @@ def _read_rows(file_obj, filename):
 def import_clients_from_file(firm, file_obj, filename):
     """Parses file_obj (binary file-like) and upserts into Client Master, scoped to firm."""
     result = ImportResult()
-    firm_categories = {c.name.strip().lower(): c for c in Category.objects.filter(firm=firm)}
 
     try:
         rows = list(_read_rows(file_obj, filename))
@@ -89,53 +86,24 @@ def import_clients_from_file(firm, file_obj, filename):
         return result
 
     for row_num, row in rows:
-        pan = row.get("pan", "").strip().upper()
-        name = row.get("name", "").strip()
-        phone = row.get("phone", "").strip()
-        aadhar = row.get("aadhar", "").strip()
         category_names = [c.strip() for c in row.get("categories", "").split(",") if c.strip()]
 
-        if not pan or not name or not phone:
-            result.errors.append(ImportError(row=row_num, reason="PAN, Client Name, and Phone are required."))
-            continue
-
-        if not PAN_REGEX.match(pan):
-            result.errors.append(ImportError(row=row_num, reason=f"Invalid PAN format: {pan}"))
-            continue
-
-        categories = []
-        unknown = []
-        for cname in category_names:
-            cat = firm_categories.get(cname.lower())
-            if cat:
-                categories.append(cat)
-            else:
-                unknown.append(cname)
-        if unknown:
-            result.errors.append(
-                ImportError(row=row_num, reason=f"Unknown category tag(s) for this firm: {', '.join(unknown)}")
-            )
-            continue
-
         try:
-            with transaction.atomic():
-                existing = Client.objects.filter(firm=firm, pan=pan).first()
-                client = existing or Client(firm=firm, pan=pan)
-                client.name = name
-                client.phone = phone
-                if aadhar:
-                    client.set_aadhar(aadhar)
-                client.full_clean(exclude=["aadhar_hash", "aadhar_masked", "categories"])
-                client.save()
-                client.categories.set(categories)
-        except ValidationError as exc:
-            reason = "; ".join(exc.messages) if hasattr(exc, "messages") else str(exc)
-            result.errors.append(ImportError(row=row_num, reason=reason))
+            _client, created = upsert_client(
+                firm,
+                row.get("pan", ""),
+                row.get("name", ""),
+                row.get("phone", ""),
+                row.get("aadhar", ""),
+                category_names,
+            )
+        except ClientDataError as exc:
+            result.errors.append(ImportError(row=row_num, reason=str(exc)))
             continue
 
-        if existing:
-            result.updated += 1
-        else:
+        if created:
             result.created += 1
+        else:
+            result.updated += 1
 
     return result
