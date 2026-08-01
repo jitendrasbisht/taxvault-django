@@ -6,6 +6,7 @@ from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import path
 from django.utils.html import format_html
+from django.views.decorators.clickjacking import xframe_options_sameorigin
 from django_q.tasks import async_task
 
 from clients.admin import FirmScopedAdminMixin, ProfileRequiredMixin, _get_profile
@@ -86,10 +87,13 @@ class DocumentAdmin(ProfileRequiredMixin, FirmScopedAdminMixin, admin.ModelAdmin
         ]
         return custom_urls + super().get_urls()
 
+    @xframe_options_sameorigin
     def preview_view(self, request, pk):
         """Section 15: in-browser document preview (PDF/image). Serving the file with
         Content-Disposition: inline lets the browser's own PDF/image viewer render it —
-        no custom viewer UI needed."""
+        no custom viewer UI needed. X-Frame-Options relaxed to same-origin only (not
+        exempt) so the portal's own resolve page can embed it in an iframe, while other
+        sites still can't (clickjacking protection stays intact)."""
         document = get_object_or_404(self.get_queryset(request), pk=pk)
         file_path = absolute_path(document.storage_path)
         if not file_path.exists():
