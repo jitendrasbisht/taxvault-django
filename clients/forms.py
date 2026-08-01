@@ -16,6 +16,7 @@ class ManualClientAddForm(forms.Form):
     pan = forms.CharField(max_length=10, label="PAN")
     name = forms.CharField(max_length=255, label="Client Name")
     phone = forms.CharField(max_length=20)
+    email = forms.EmailField(max_length=254)
     aadhar = forms.CharField(
         max_length=14, required=False, label="Aadhar (optional)",
         help_text="Never stored in plaintext — only a masked value and a hash are kept.",

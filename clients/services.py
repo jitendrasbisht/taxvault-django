@@ -12,14 +12,15 @@ class ClientDataError(Exception):
     """Raised when client data fails validation, from either onboarding path."""
 
 
-def upsert_client(firm, pan, name, phone, aadhar, category_names):
+def upsert_client(firm, pan, name, phone, email, aadhar, category_names):
     pan = (pan or "").strip().upper()
     name = (name or "").strip()
     phone = (phone or "").strip()
+    email = (email or "").strip()
     aadhar = (aadhar or "").strip()
 
-    if not pan or not name or not phone:
-        raise ClientDataError("PAN, Client Name, and Phone are required.")
+    if not pan or not name or not phone or not email:
+        raise ClientDataError("PAN, Client Name, Phone, and Email are required.")
     if not PAN_REGEX.match(pan):
         raise ClientDataError(f"Invalid PAN format: {pan}")
 
@@ -42,6 +43,7 @@ def upsert_client(firm, pan, name, phone, aadhar, category_names):
         client = existing or Client(firm=firm, pan=pan)
         client.name = name
         client.phone = phone
+        client.email = email
         try:
             if aadhar:
                 client.set_aadhar(aadhar)

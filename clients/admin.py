@@ -187,7 +187,7 @@ class CategoryAdmin(FirmAdminOnlyMixin, FirmScopedAdminMixin, admin.ModelAdmin):
 
 @admin.register(Client)
 class ClientAdmin(ProfileRequiredMixin, FirmScopedAdminMixin, admin.ModelAdmin):
-    list_display = ("pan", "name", "phone", "firm", "aadhar_masked", "itr_status_display", "download_all_link")
+    list_display = ("pan", "name", "phone", "email", "firm", "aadhar_masked", "itr_status_display", "download_all_link")
     list_filter = (FirmScopedCategoryFilter, ITRStatusFilter)
     search_fields = ("pan", "name", "phone")
 
@@ -239,7 +239,7 @@ class ClientAdmin(ProfileRequiredMixin, FirmScopedAdminMixin, admin.ModelAdmin):
                 category_names = [c.name for c in cd["categories"]]
                 try:
                     client, created = upsert_client(
-                        cd["firm"], cd["pan"], cd["name"], cd["phone"], cd["aadhar"], category_names
+                        cd["firm"], cd["pan"], cd["name"], cd["phone"], cd["email"], cd["aadhar"], category_names
                     )
                 except ClientDataError as exc:
                     form.add_error(None, str(exc))

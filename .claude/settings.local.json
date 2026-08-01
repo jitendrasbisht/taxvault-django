@@ -29,7 +29,8 @@
       "Bash(git commit *)",
       "Read(//dev/**)",
       "Bash(curl -s -D - -o /dev/null \"http://localhost:8000/admin/documents/document/3/preview/\" -H \"Cookie: $\\(cat /dev/null\\)\")",
-      "Bash(git status *)"
+      "Bash(git status *)",
+      "Bash(venv/Scripts/python.exe -c ' *)"
     ]
   }
 }

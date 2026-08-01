@@ -96,6 +96,10 @@ class Client(models.Model):
     pan = models.CharField(max_length=10, validators=[pan_validator])
     name = models.CharField(max_length=255)
     phone = models.CharField(max_length=20)
+    # Not in Section 2's original field list, but Section 11 (Reminders) requires an
+    # individually-addressed email per client and has no other source for one -- added
+    # with explicit approval as a gap-fill, same required-ness as Phone.
+    email = models.EmailField(max_length=254, blank=True, default="")
 
     # Aadhar is optional and, per Section 3, stored masked/hashed — never plaintext.
     aadhar_hash = models.CharField(max_length=64, null=True, blank=True, editable=False)

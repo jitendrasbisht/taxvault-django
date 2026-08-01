@@ -10,12 +10,13 @@ import openpyxl
 
 from .services import ClientDataError, upsert_client
 
-REQUIRED_HEADERS = {"pan", "name", "phone"}
+REQUIRED_HEADERS = {"pan", "name", "phone", "email"}
 HEADER_ALIASES = {
     "pan": "pan",
     "client name": "name",
     "name": "name",
     "phone": "phone",
+    "email": "email",
     "aadhar": "aadhar",
     "aadhaar": "aadhar",
     "category tags": "categories",
@@ -94,6 +95,7 @@ def import_clients_from_file(firm, file_obj, filename):
                 row.get("pan", ""),
                 row.get("name", ""),
                 row.get("phone", ""),
+                row.get("email", ""),
                 row.get("aadhar", ""),
                 category_names,
             )
