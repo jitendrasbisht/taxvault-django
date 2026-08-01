@@ -1,0 +1,85 @@
+import hashlib
+import re
+
+from django.core.exceptions import ValidationError
+from django.core.validators import RegexValidator
+from django.db import models
+
+PAN_REGEX = re.compile(r"^[A-Z]{5}[0-9]{4}[A-Z]{1}$")
+AADHAR_DIGITS_REGEX = re.compile(r"^\d{12}$")
+
+pan_validator = RegexValidator(
+    regex=PAN_REGEX,
+    message="PAN must match the format AAAAA9999A (5 letters, 4 digits, 1 letter).",
+)
+
+
+class Firm(models.Model):
+    """A CA firm — the multi-tenancy boundary (Section 13). Created manually by the system admin."""
+
+    name = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
+
+class Category(models.Model):
+    """Configurable, per-firm category tag (Section 5 / Section 13). Not a fixed choices field."""
+
+    firm = models.ForeignKey(Firm, on_delete=models.CASCADE, related_name="categories")
+    name = models.CharField(max_length=100)
+
+    class Meta:
+        verbose_name_plural = "categories"
+        constraints = [
+            models.UniqueConstraint(fields=["firm", "name"], name="unique_category_per_firm"),
+        ]
+
+    def __str__(self):
+        return self.name
+
+
+class Client(models.Model):
+    """Client Master (Section 2). Single table for both bulk-import and manual-add onboarding paths."""
+
+    firm = models.ForeignKey(Firm, on_delete=models.CASCADE, related_name="clients")
+
+    pan = models.CharField(max_length=10, validators=[pan_validator])
+    name = models.CharField(max_length=255)
+    phone = models.CharField(max_length=20)
+
+    # Aadhar is optional and, per Section 3, stored masked/hashed — never plaintext.
+    aadhar_hash = models.CharField(max_length=64, null=True, blank=True, editable=False)
+    aadhar_masked = models.CharField(max_length=14, null=True, blank=True, editable=False)
+
+    categories = models.ManyToManyField(Category, related_name="clients", blank=False)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["firm", "pan"], name="unique_pan_per_firm"),
+        ]
+
+    def __str__(self):
+        return f"{self.pan} — {self.name}"
+
+    def clean(self):
+        if self.pan:
+            self.pan = self.pan.upper()
+            if not PAN_REGEX.match(self.pan):
+                raise ValidationError({"pan": "PAN must match the format AAAAA9999A."})
+
+    def set_aadhar(self, raw_aadhar):
+        """Hash + mask a raw 12-digit Aadhar number. Raw value is never persisted."""
+        if not raw_aadhar:
+            self.aadhar_hash = None
+            self.aadhar_masked = None
+            return
+        digits = re.sub(r"\D", "", raw_aadhar)
+        if not AADHAR_DIGITS_REGEX.match(digits):
+            raise ValidationError({"aadhar": "Aadhar must be exactly 12 digits."})
+        self.aadhar_hash = hashlib.sha256(digits.encode()).hexdigest()
+        self.aadhar_masked = f"XXXX-XXXX-{digits[-4:]}"
