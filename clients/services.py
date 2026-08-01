@@ -1,10 +1,11 @@
 """Single logic path for writing to the Client Master table (Section 2: bulk import and
 manual add write to the same table via no separate logic paths downstream)."""
 
+from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import transaction
 
-from .models import PAN_REGEX, Category, Client
+from .models import PAN_REGEX, Category, Client, UserProfile
 
 
 class ClientDataError(Exception):
@@ -52,3 +53,31 @@ def upsert_client(firm, pan, name, phone, aadhar, category_names):
         client.categories.set(categories)
 
     return client, existing is None
+
+
+class FirmUserError(Exception):
+    """Raised when creating a Firm Admin / Staff login fails validation (Section 14)."""
+
+
+def create_firm_user(firm, username, password, role):
+    """The only way an in-app user is created — never touches Django's raw User admin
+    or is_superuser. Section 13: firms themselves are still added only by the system admin."""
+    User = get_user_model()
+
+    username = (username or "").strip()
+    role = (role or "").strip()
+
+    if not username or not password:
+        raise FirmUserError("Username and password are required.")
+    if len(password) < 8:
+        raise FirmUserError("Password must be at least 8 characters.")
+    if role not in dict(UserProfile.ROLE_CHOICES):
+        raise FirmUserError("Invalid role.")
+    if User.objects.filter(username=username).exists():
+        raise FirmUserError(f"Username '{username}' is already taken.")
+
+    with transaction.atomic():
+        user = User.objects.create_user(username=username, password=password, is_staff=True)
+        profile = UserProfile.objects.create(user=user, firm=firm, role=role)
+
+    return profile

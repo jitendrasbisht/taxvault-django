@@ -1,6 +1,7 @@
 import hashlib
 import re
 
+from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
@@ -23,6 +24,25 @@ class Firm(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class UserProfile(models.Model):
+    """Section 14: exactly two roles, each user scoped to exactly one firm (no per-client
+    staff assignment — a Staff or Firm Admin user sees all of their firm's clients)."""
+
+    ROLE_FIRM_ADMIN = "firm_admin"
+    ROLE_STAFF = "staff"
+    ROLE_CHOICES = [
+        (ROLE_FIRM_ADMIN, "Firm Admin"),
+        (ROLE_STAFF, "Staff"),
+    ]
+
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="profile")
+    firm = models.ForeignKey(Firm, on_delete=models.CASCADE, related_name="members")
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES)
+
+    def __str__(self):
+        return f"{self.user.username} — {self.get_role_display()} @ {self.firm.name}"
 
 
 class DocCode(models.Model):
