@@ -34,7 +34,8 @@
       "Bash(tasklist)",
       "Bash(tasklist //FI \"IMAGENAME eq python.exe\" //V)",
       "Bash(\"venv/Scripts/python.exe\" manage.py qcluster)",
-      "Bash(node --check \"C:\\\\Users\\\\Jeet\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-Jeet-Desktop-projects-TaxVault\\\\4789e82e-da59-4d3a-bee1-31d127768139\\\\scratchpad\\\\script_check.js\")"
+      "Bash(node --check \"C:\\\\Users\\\\Jeet\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-Jeet-Desktop-projects-TaxVault\\\\4789e82e-da59-4d3a-bee1-31d127768139\\\\scratchpad\\\\script_check.js\")",
+      "Bash(node --check \"C:\\\\Users\\\\Jeet\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-Jeet-Desktop-projects-TaxVault\\\\4789e82e-da59-4d3a-bee1-31d127768139\\\\scratchpad\\\\dash_script2.js\")"
     ]
   }
 }
