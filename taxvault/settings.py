@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.postgres',
+    'django_q',
     'clients',
     'documents',
 ]
@@ -51,6 +52,21 @@ INSTALLED_APPS = [
 # Everything downstream reads/writes through documents/storage.py, so swapping to R2 later
 # only touches that one module.
 VAULT_ROOT = BASE_DIR / 'vault_storage'
+
+# Background jobs (Section 17): Django-Q + Redis, for batch folder intake. process_batch()
+# was built and verified synchronously first (documents/pipeline.py, run_intake_batch
+# management command) before being wrapped in the async task in documents/tasks.py.
+Q_CLUSTER = {
+    'name': 'taxvault',
+    'workers': 2,
+    'timeout': 600,
+    'retry': 900,
+    'redis': {
+        'host': os.environ.get('REDIS_HOST', 'localhost'),
+        'port': int(os.environ.get('REDIS_PORT', 6379)),
+        'db': 0,
+    },
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

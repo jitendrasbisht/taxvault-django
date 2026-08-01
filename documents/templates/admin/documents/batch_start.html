@@ -1,0 +1,13 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<h1>{{ title }}</h1>
+<form method="post">
+  {% csrf_token %}
+  {{ form.non_field_errors }}
+  <table>
+    {{ form.as_table }}
+  </table>
+  <input type="submit" value="Queue Batch" class="default">
+</form>
+{% endblock %}

@@ -1,10 +1,13 @@
+from pathlib import Path
+
 from django.contrib import admin, messages
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import path
+from django_q.tasks import async_task
 
-from clients.admin import FirmScopedAdminMixin, ProfileRequiredMixin
+from clients.admin import FirmScopedAdminMixin, ProfileRequiredMixin, _get_profile
 
-from .forms import ReviewResolutionForm
+from .forms import ReviewResolutionForm, StartBatchForm
 from .models import Batch, Document
 from .services import ReviewResolutionError, resolve_review_document
 
@@ -15,9 +18,48 @@ class BatchAdmin(ProfileRequiredMixin, FirmScopedAdminMixin, admin.ModelAdmin):
     list_filter = ("ay",)
 
     def has_add_permission(self, request):
-        # Batches are created by run_intake_batch / the future Django-Q trigger, not a
-        # raw admin add form (folder_path shouldn't be freehand-typed against real storage).
+        # Batches are created via the Start Batch view (which also enqueues the Django-Q
+        # task), not a raw admin add form -- folder_path shouldn't be freehand-typed
+        # without also kicking off processing.
         return False
+
+    def get_urls(self):
+        custom_urls = [
+            path("start/", self.admin_site.admin_view(self.start_batch_view), name="documents_batch_start"),
+        ]
+        return custom_urls + super().get_urls()
+
+    def start_batch_view(self, request):
+        profile = _get_profile(request)
+        firm = profile.firm if profile else None
+        if firm is None and not request.user.is_superuser:
+            messages.error(request, "You don't have permission to start a batch.")
+            return redirect("admin:index")
+
+        if request.method == "POST":
+            form = StartBatchForm(request.POST)
+            if form.is_valid():
+                folder = Path(form.cleaned_data["folder_path"])
+                if not folder.is_dir():
+                    form.add_error("folder_path", "Not a directory on this server.")
+                else:
+                    batch = Batch.objects.create(
+                        firm=firm, ay=form.cleaned_data["ay"], folder_path=str(folder),
+                        triggered_by=request.user,
+                    )
+                    async_task("documents.tasks.run_batch", batch.id)
+                    messages.success(request, f"Batch #{batch.id} queued — refresh in a moment to see results.")
+                    return redirect("admin:documents_batch_changelist")
+        else:
+            form = StartBatchForm()
+
+        context = {
+            **self.admin_site.each_context(request),
+            "form": form,
+            "title": "Start Batch",
+            "opts": self.model._meta,
+        }
+        return render(request, "admin/documents/batch_start.html", context)
 
 
 @admin.register(Document)
