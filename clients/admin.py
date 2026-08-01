@@ -6,6 +6,10 @@ from .forms import FirmUserAddForm, ManualClientAddForm
 from .models import Category, Client, DocCode, Firm, UserProfile
 from .services import ClientDataError, FirmUserError, create_firm_user, upsert_client
 
+# documents depends on clients, never the reverse for models — but admin.py loads after
+# all apps' models are ready, so this cross-app import here is safe.
+from documents.status import compute_itr_status
+
 
 def _get_profile(request):
     return getattr(request.user, "profile", None)
@@ -138,6 +142,24 @@ class FirmScopedCategoryFilter(admin.SimpleListFilter):
         return queryset
 
 
+class ITRStatusFilter(admin.SimpleListFilter):
+    """Section 9: Ready / In Progress / Not Started, for the current AY only — no AY
+    switcher in MVP1 (Section 8), so this filter doesn't take one either."""
+
+    title = "ITR status"
+    parameter_name = "itr_status"
+
+    def lookups(self, request, model_admin):
+        return [("ready", "Ready"), ("in_progress", "In Progress"), ("not_started", "Not Started")]
+
+    def queryset(self, request, queryset):
+        value = self.value()
+        if not value:
+            return queryset
+        matching_ids = [c.id for c in queryset if compute_itr_status(c).status == value]
+        return queryset.filter(id__in=matching_ids)
+
+
 @admin.register(Firm)
 class FirmAdmin(SuperuserOnlyMixin, admin.ModelAdmin):
     list_display = ("name", "created_at")
@@ -158,9 +180,13 @@ class CategoryAdmin(FirmAdminOnlyMixin, FirmScopedAdminMixin, admin.ModelAdmin):
 
 @admin.register(Client)
 class ClientAdmin(ProfileRequiredMixin, FirmScopedAdminMixin, admin.ModelAdmin):
-    list_display = ("pan", "name", "phone", "firm", "aadhar_masked")
-    list_filter = (FirmScopedCategoryFilter,)
+    list_display = ("pan", "name", "phone", "firm", "aadhar_masked", "itr_status_display")
+    list_filter = (FirmScopedCategoryFilter, ITRStatusFilter)
     search_fields = ("pan", "name", "phone")
+
+    @admin.display(description="ITR Status")
+    def itr_status_display(self, obj):
+        return compute_itr_status(obj).label
 
     def get_urls(self):
         custom_urls = [
