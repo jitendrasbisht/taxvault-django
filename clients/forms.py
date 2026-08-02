@@ -76,3 +76,9 @@ class FirmUserAddForm(forms.Form):
             raise forms.ValidationError("Firm is required.")
         cleaned["firm"] = firm
         return cleaned
+
+
+class ResetPasswordForm(forms.Form):
+    """Firm Admin resets a password for a user already confirmed in their own firm."""
+
+    new_password = forms.CharField(widget=forms.PasswordInput, min_length=8, label="New password")

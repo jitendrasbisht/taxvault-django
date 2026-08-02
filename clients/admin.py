@@ -3,14 +3,14 @@ import zipfile
 
 from django.contrib import admin, messages
 from django.http import HttpResponse
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import path
 from django.utils.html import format_html
 
-from .forms import FirmUserAddForm, ManualClientAddForm
+from .forms import FirmUserAddForm, ManualClientAddForm, ResetPasswordForm
 from .models import Category, Client, DocCode, Firm, ReminderLog, UserProfile
 from .reminders import send_followup, send_initial_request
-from .services import ClientDataError, FirmUserError, create_firm_user, upsert_client
+from .services import ClientDataError, FirmUserError, create_firm_user, reset_firm_user_password, upsert_client
 
 # documents depends on clients, never the reverse for models — but admin.py loads after
 # all apps' models are ready, so this cross-app import here is safe.
@@ -285,17 +285,47 @@ class UserProfileAdmin(FirmAdminOnlyMixin, FirmScopedAdminMixin, admin.ModelAdmi
     add_staff_view / create_firm_user(), never a raw ModelForm, since a real login (with a
     hashed password) has to be created alongside the profile."""
 
-    list_display = ("user", "role", "firm")
+    list_display = ("user", "role", "firm", "reset_password_link")
     list_filter = ("role",)
 
     def has_add_permission(self, request):
         return False
 
+    @admin.display(description="Password")
+    def reset_password_link(self, obj):
+        return format_html('<a href="{}/reset-password/">Reset password</a>', obj.pk)
+
     def get_urls(self):
         custom_urls = [
             path("add-staff/", self.admin_site.admin_view(self.add_staff_view), name="clients_userprofile_add_staff"),
+            path("<int:pk>/reset-password/", self.admin_site.admin_view(self.reset_password_view), name="clients_userprofile_reset_password"),
         ]
         return custom_urls + super().get_urls()
+
+    def reset_password_view(self, request, pk):
+        profile = get_object_or_404(self.get_queryset(request), pk=pk)
+
+        if request.method == "POST":
+            form = ResetPasswordForm(request.POST)
+            if form.is_valid():
+                try:
+                    reset_firm_user_password(profile, form.cleaned_data["new_password"])
+                except FirmUserError as exc:
+                    form.add_error(None, str(exc))
+                else:
+                    messages.success(request, f"Password reset for '{profile.user.username}'.")
+                    return redirect("admin:clients_userprofile_changelist")
+        else:
+            form = ResetPasswordForm()
+
+        context = {
+            **self.admin_site.each_context(request),
+            "form": form,
+            "profile": profile,
+            "title": f"Reset Password: {profile.user.username}",
+            "opts": self.model._meta,
+        }
+        return render(request, "admin/clients/userprofile_reset_password.html", context)
 
     def add_staff_view(self, request):
         if not _is_firm_admin(request):

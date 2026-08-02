@@ -83,3 +83,14 @@ def create_firm_user(firm, username, password, role):
         profile = UserProfile.objects.create(user=user, firm=firm, role=role)
 
     return profile
+
+
+def reset_firm_user_password(profile, new_password):
+    """Firm Admin resets a password for a user already confirmed to be in their own firm
+    (the caller must have scoped `profile` via a firm-filtered queryset first -- this
+    function itself doesn't re-check firm, same as create_firm_user not re-checking who's
+    allowed to call it)."""
+    if not new_password or len(new_password) < 8:
+        raise FirmUserError("Password must be at least 8 characters.")
+    profile.user.set_password(new_password)
+    profile.user.save(update_fields=["password"])
