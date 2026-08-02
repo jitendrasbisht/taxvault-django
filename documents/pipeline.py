@@ -8,7 +8,14 @@ from django.utils import timezone
 from taxvault.vault_naming import vault_filename, vault_folder_path
 
 from .classification import classify, compute_content_hash, find_exact_duplicate, find_possible_duplicate
-from .extraction import IMAGE_EXTENSIONS, SUPPORTED_EXTENSIONS, detect_identifiers, extract_text_from_pdf, match_client
+from .extraction import (
+    IMAGE_EXTENSIONS,
+    SUPPORTED_EXTENSIONS,
+    detect_identifiers,
+    extract_text_from_pdf,
+    looks_like_scanned_pdf,
+    match_client,
+)
 from .models import Document
 from .storage import file_and_archive, move_to_review_pending
 
@@ -81,11 +88,12 @@ def process_batch(batch):
 
         if client is None:
             review_path = move_to_review_pending(src_path, batch.id, original_filename)
-            reason = (
-                "No PAN/Aadhar/Phone detected in the document."
-                if not any(identifiers.values())
-                else "Detected identifier did not match any client."
-            )
+            if looks_like_scanned_pdf(text):
+                reason = "This looks like a scanned PDF with no readable text — OCR not available yet."
+            elif not any(identifiers.values()):
+                reason = "No PAN/Aadhar/Phone detected in the document."
+            else:
+                reason = "Detected identifier did not match any client."
             Document.objects.create(
                 batch=batch, firm=firm, ay=batch.ay,
                 original_filename=original_filename, content_hash=content_hash,

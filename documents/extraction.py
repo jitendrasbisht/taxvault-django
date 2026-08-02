@@ -19,6 +19,15 @@ TEXT_EXTENSIONS = {".pdf"}
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png"}
 SUPPORTED_EXTENSIONS = TEXT_EXTENSIONS | IMAGE_EXTENSIONS
 
+# A scanned/photographed page saved as .pdf has no real text layer -- pypdf returns little
+# to nothing for it (sometimes a handful of stray characters from artifacts, rarely truly
+# zero), unlike a genuine digital PDF which always has a meaningful amount of text.
+MIN_MEANINGFUL_TEXT_LENGTH = 20
+
+
+def looks_like_scanned_pdf(text: str) -> bool:
+    return len(text.strip()) < MIN_MEANINGFUL_TEXT_LENGTH
+
 # Mirrors documents.models.Document.MATCH_* — kept as plain strings here so this module
 # doesn't have to import documents.models (one-way dependency: documents imports clients,
 # never the other way).
