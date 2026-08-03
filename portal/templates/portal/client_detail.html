@@ -1,11 +1,12 @@
 {% extends "portal/base.html" %}
+{% load static %}
 {% block title %}{{ client.name }} — TaxVault{% endblock %}
 
 {% block content %}
 <div class="flex-1 overflow-auto">
   <div class="border-b border-slate-200 bg-white px-8 py-5">
-    <a href="{% url 'portal:dashboard' %}" class="mb-3 flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700">
-      <i data-lucide="arrow-left" class="h-3.5 w-3.5"></i> Back to dashboard
+    <a href="{% url 'portal:clients_list' %}" class="mb-3 flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700">
+      <i data-lucide="arrow-left" class="h-3.5 w-3.5"></i> Back to clients
     </a>
     <div class="flex items-start justify-between">
       <div>
@@ -15,16 +16,30 @@
             {% if status.status == 'ready' %}bg-emerald-50 text-emerald-700 ring-emerald-200
             {% elif status.status == 'in_progress' %}bg-amber-50 text-amber-700 ring-amber-200
             {% else %}bg-rose-50 text-rose-700 ring-rose-200{% endif %}">
-            <span class="h-1.5 w-1.5 rounded-full
-              {% if status.status == 'ready' %}bg-emerald-500
-              {% elif status.status == 'in_progress' %}bg-amber-500
-              {% else %}bg-rose-500{% endif %}"></span>
+            {% if status.status == 'ready' %}
+            <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <path class="check-draw" d="M4 12l5 5L20 6"></path>
+            </svg>
+            {% else %}
+            <span class="h-1.5 w-1.5 rounded-full {% if status.status == 'in_progress' %}bg-amber-500{% else %}bg-rose-500{% endif %}"></span>
+            {% endif %}
             {{ status.label }}
           </span>
+          {% if status.status == 'ready' %}
+          <img src="{% static 'portal/img/ready_confetti.gif' %}" alt="" class="h-9 w-9" width="36" height="36">
+          {% endif %}
         </div>
         <p class="mt-1 font-mono text-xs text-slate-500">{{ client.pan }} &middot; {{ client.phone }} &middot; {{ client.email }}</p>
+        {% if client.last_edited_by %}
+        <p class="mt-1 text-xs text-slate-400">Last edited by {{ client.last_edited_by.username }} on {{ client.updated_at|date:"M j, Y H:i" }}</p>
+        {% endif %}
       </div>
       <div class="flex gap-2">
+        {% if profile.role == 'firm_admin' %}
+        <a href="{% url 'portal:edit_client' client.pk %}" class="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50">
+          <i data-lucide="pencil" class="h-3.5 w-3.5"></i> Edit
+        </a>
+        {% endif %}
         <a href="/admin/clients/client/{{ client.pk }}/download-zip/" class="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50">
           <i data-lucide="download" class="h-3.5 w-3.5"></i> Download All
         </a>
@@ -33,7 +48,7 @@
           <button type="submit" name="action" value="send_initial" class="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50">
             <i data-lucide="send" class="h-3.5 w-3.5"></i> Send Initial Request
           </button>
-          <button type="submit" name="action" value="send_followup" class="flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-800">
+          <button type="submit" name="action" value="send_followup" class="btn-primary flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-white">
             <i data-lucide="send" class="h-3.5 w-3.5"></i> Send Follow-up
           </button>
         </form>
@@ -48,7 +63,7 @@
         <span class="text-xs text-slate-400">{{ received_count }} of {{ total_count }} received</span>
       </div>
       <div class="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
-        <div class="h-full rounded-full bg-slate-900 transition-all" style="width: {{ progress_pct }}%"></div>
+        <div class="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 transition-all" style="width: {{ progress_pct }}%"></div>
       </div>
       <div class="mt-5 divide-y divide-slate-50">
         {% for doc_code, doc in doc_rows %}
@@ -61,7 +76,10 @@
           <span class="text-sm {% if doc %}text-slate-700{% else %}text-slate-400{% endif %}">{{ doc_code.display_name }}</span>
           <span class="font-mono text-[11px] text-slate-300">{{ doc_code.code }}</span>
           {% if doc %}
-          <span class="ml-auto font-mono text-[11px] text-slate-400">{{ doc.storage_path|slice:"-40:" }}</span>
+          <button type="button" onclick="openPreview('/admin/documents/document/{{ doc.pk }}/preview/', '{{ doc.original_filename|escapejs }}')"
+             class="ml-auto flex items-center gap-1 rounded-md border border-slate-200 px-2 py-1 text-[11px] font-medium text-indigo-600 hover:bg-indigo-50">
+            <i data-lucide="eye" class="h-3 w-3"></i> View
+          </button>
           {% else %}
           <span class="ml-auto text-[11px] font-medium text-rose-400">Missing</span>
           {% endif %}

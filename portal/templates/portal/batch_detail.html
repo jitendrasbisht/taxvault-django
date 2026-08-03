@@ -56,7 +56,13 @@
             <td class="px-3 py-2.5 text-slate-400">{{ doc.get_extraction_method_display }}</td>
             <td class="px-3 py-2.5">
               {% if doc.status == 'filed' and not doc.review_reason %}
-              <span class="flex items-center gap-1 text-emerald-600"><i data-lucide="check-circle-2" class="h-3 w-3"></i> Filed</span>
+              <div class="flex items-center gap-2">
+                <span class="flex items-center gap-1 text-emerald-600"><i data-lucide="check-circle-2" class="h-3 w-3"></i> Filed</span>
+                <button type="button" onclick="openPreview('/admin/documents/document/{{ doc.pk }}/preview/', '{{ doc.original_filename|escapejs }}')"
+                   class="flex items-center gap-1 rounded border border-slate-200 px-1.5 py-0.5 text-indigo-600 hover:bg-indigo-50">
+                  <i data-lucide="eye" class="h-3 w-3"></i> View
+                </button>
+              </div>
               {% elif doc.status == 'filed' %}
               <a href="{% url 'portal:review_resolve' doc.pk %}" class="flex items-center gap-1 text-amber-600 hover:underline"><i data-lucide="alert-circle" class="h-3 w-3"></i> MISC</a>
               {% else %}

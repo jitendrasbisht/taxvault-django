@@ -12,14 +12,24 @@ class ManualClientAddForm(forms.Form):
     is removed entirely and categories are restricted to that firm — Section 13 isolation.
     A superuser (no locked_firm) still gets the open firm picker, for internal admin use."""
 
+    _INPUT_CSS = (
+        "w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none "
+        "focus:border-slate-300 focus:bg-white"
+    )
+
     firm = forms.ModelChoiceField(queryset=Firm.objects.all(), required=False)
-    pan = forms.CharField(max_length=10, label="PAN")
-    name = forms.CharField(max_length=255, label="Client Name")
-    phone = forms.CharField(max_length=20)
-    email = forms.EmailField(max_length=254)
+    pan = forms.CharField(
+        max_length=10, label="PAN", widget=forms.TextInput(attrs={"class": _INPUT_CSS})
+    )
+    name = forms.CharField(
+        max_length=255, label="Client Name", widget=forms.TextInput(attrs={"class": _INPUT_CSS})
+    )
+    phone = forms.CharField(max_length=20, widget=forms.TextInput(attrs={"class": _INPUT_CSS}))
+    email = forms.EmailField(max_length=254, widget=forms.EmailInput(attrs={"class": _INPUT_CSS}))
     aadhar = forms.CharField(
         max_length=14, required=False, label="Aadhar (optional)",
         help_text="Never stored in plaintext — only a masked value and a hash are kept.",
+        widget=forms.TextInput(attrs={"class": _INPUT_CSS}),
     )
     categories = forms.ModelMultipleChoiceField(
         queryset=Category.objects.none(), widget=forms.CheckboxSelectMultiple,

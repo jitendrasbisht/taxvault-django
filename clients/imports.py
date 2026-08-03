@@ -76,7 +76,7 @@ def _read_rows(file_obj, filename):
             yield i, row
 
 
-def import_clients_from_file(firm, file_obj, filename):
+def import_clients_from_file(firm, file_obj, filename, edited_by=None):
     """Parses file_obj (binary file-like) and upserts into Client Master, scoped to firm."""
     result = ImportResult()
 
@@ -98,6 +98,7 @@ def import_clients_from_file(firm, file_obj, filename):
                 row.get("email", ""),
                 row.get("aadhar", ""),
                 category_names,
+                edited_by=edited_by,
             )
         except ClientDataError as exc:
             result.errors.append(ImportError(row=row_num, reason=str(exc)))

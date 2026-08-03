@@ -109,6 +109,11 @@ class Client(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    # Light-touch "who touched this record last" — deliberately not a full audit trail
+    # (Section 16 excludes that from MVP1). No history of prior values, just the latest.
+    last_edited_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
 
     class Meta:
         constraints = [
@@ -166,6 +171,11 @@ class ReminderLog(models.Model):
     subject = models.CharField(max_length=500, blank=True, default="")
     body = models.TextField(blank=True, default="")
     sent_at = models.DateTimeField(auto_now_add=True)
+    # Who triggered the send — light-touch, single latest value, same as Client.last_edited_by.
+    # Not an audit trail (Section 16): just enough to power the Dashboard's staff leaderboard.
+    sent_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
 
     def __str__(self):
         return f"{self.client.pan} — {self.get_stage_display()} — {self.sent_at:%Y-%m-%d}"

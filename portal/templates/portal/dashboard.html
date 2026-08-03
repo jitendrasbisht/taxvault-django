@@ -1,126 +1,305 @@
 {% extends "portal/base.html" %}
+{% load static %}
 {% block title %}Dashboard — TaxVault{% endblock %}
 
 {% block content %}
-<div class="flex-1 overflow-auto">
-  <div class="border-b border-slate-200 bg-white px-8 py-6">
-    <div class="flex items-center justify-between">
-      <div>
-        <h1 class="text-xl font-semibold text-slate-900">Client Dashboard</h1>
-        <p class="mt-0.5 text-sm text-slate-500">Assessment Year {{ ay }} &middot; {{ total_clients }} clients</p>
-      </div>
-      <a href="{% url 'portal:reminders' %}" class="flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
-        <i data-lucide="send" class="h-[15px] w-[15px]"></i> Send Reminders
-      </a>
-    </div>
+<div class="flex-1 overflow-auto" style="background: #016fd0;">
+  <div class="px-8 py-5">
+    <h1 class="text-2xl font-semibold text-white">Firm Dashboard</h1>
+    <p class="mt-1 text-base text-white/80">{{ profile.firm.name }} &middot; Assessment Year {{ ay }} &middot; where the practice stands right now</p>
   </div>
 
-  <div class="grid grid-cols-3 gap-4 px-8 pt-6">
-    <a href="?status={% if status_filter == 'ready' %}all{% else %}ready{% endif %}{% if query %}&q={{ query }}{% endif %}"
-       class="rounded-xl border p-4 text-left transition-all bg-white {% if status_filter == 'ready' %}border-slate-900 ring-1 ring-slate-900{% else %}border-slate-200 hover:border-slate-300{% endif %}">
-      <div class="flex items-center justify-between">
-        <span class="flex h-9 w-9 items-center justify-center rounded-lg text-emerald-600 bg-emerald-50">
-          <i data-lucide="check-circle-2" class="h-[17px] w-[17px]"></i>
-        </span>
-        <span class="text-2xl font-semibold text-slate-900">{{ counts.ready }}</span>
-      </div>
-      <p class="mt-3 text-sm font-medium text-slate-600">Ready for ITR</p>
-    </a>
-    <a href="?status={% if status_filter == 'in_progress' %}all{% else %}in_progress{% endif %}{% if query %}&q={{ query }}{% endif %}"
-       class="rounded-xl border p-4 text-left transition-all bg-white {% if status_filter == 'in_progress' %}border-slate-900 ring-1 ring-slate-900{% else %}border-slate-200 hover:border-slate-300{% endif %}">
-      <div class="flex items-center justify-between">
-        <span class="flex h-9 w-9 items-center justify-center rounded-lg text-amber-600 bg-amber-50">
-          <i data-lucide="clock" class="h-[17px] w-[17px]"></i>
-        </span>
-        <span class="text-2xl font-semibold text-slate-900">{{ counts.in_progress }}</span>
-      </div>
-      <p class="mt-3 text-sm font-medium text-slate-600">In Progress</p>
-    </a>
-    <a href="?status={% if status_filter == 'not_started' %}all{% else %}not_started{% endif %}{% if query %}&q={{ query }}{% endif %}"
-       class="rounded-xl border p-4 text-left transition-all bg-white {% if status_filter == 'not_started' %}border-slate-900 ring-1 ring-slate-900{% else %}border-slate-200 hover:border-slate-300{% endif %}">
-      <div class="flex items-center justify-between">
-        <span class="flex h-9 w-9 items-center justify-center rounded-lg text-rose-600 bg-rose-50">
-          <i data-lucide="alert-circle" class="h-[17px] w-[17px]"></i>
-        </span>
-        <span class="text-2xl font-semibold text-slate-900">{{ counts.not_started }}</span>
-      </div>
-      <p class="mt-3 text-sm font-medium text-slate-600">Not Started</p>
+  {% if not total_clients %}
+  <div class="mx-8 mt-10 flex flex-col items-center rounded-2xl border border-dashed border-slate-200 bg-white px-8 py-16 text-center fade-up">
+    <img src="{% static 'portal/img/empty_folder.gif' %}?v=2" alt="" width="140" height="140" class="h-[140px] w-[140px]">
+    <h2 class="mt-4 text-lg font-semibold text-slate-800">Nothing to summarize yet</h2>
+    <p class="mt-1 max-w-sm text-base text-slate-500">Add clients on the Clients page and this dashboard fills in automatically.</p>
+    <a href="{% url 'portal:clients_list' %}" class="btn-primary mt-5 flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white">
+      <i data-lucide="users" class="h-[15px] w-[15px]"></i> Go to Clients
     </a>
   </div>
+  {% else %}
 
-  <div class="mx-8 mt-6 rounded-xl border border-slate-200 bg-white">
-    <div class="flex items-center gap-3 border-b border-slate-100 px-5 py-3.5">
-      <div class="relative flex-1 max-w-xs">
-        <i data-lucide="search" class="absolute left-3 top-1/2 h-[15px] w-[15px] -translate-y-1/2 text-slate-400"></i>
-        <input type="text" id="client-filter-input" placeholder="Search name or PAN..." autocomplete="off"
-               class="w-full rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-8 pr-3 text-sm outline-none focus:border-slate-300 focus:bg-white">
+  <div class="px-8 py-5">
+    <!-- KPI strip: 3 across, 2 rows -->
+    <div class="grid grid-cols-3 gap-3 items-stretch">
+      <div class="card-hover rounded-xl border border-slate-200 bg-white p-3">
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-semibold text-slate-500">Total Clients</span>
+          <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-500"><i data-lucide="users" class="h-4 w-4"></i></span>
+        </div>
+        <div class="mt-1 text-3xl font-bold text-slate-900">{{ total_clients }}</div>
       </div>
-      {% if status_filter != 'all' %}
-      <a href="?" class="flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs text-slate-500 hover:bg-slate-50">
-        <i data-lucide="filter" class="h-3 w-3"></i> Clear filter
-      </a>
-      {% endif %}
-      <span class="ml-auto text-xs text-slate-400"><span id="client-shown-count">{{ rows|length }}</span> shown</span>
+
+      <div class="card-hover rounded-xl border border-slate-200 bg-white p-3">
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-semibold text-slate-500">Ready for ITR</span>
+          <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600"><i data-lucide="check-circle-2" class="h-4 w-4"></i></span>
+        </div>
+        <div class="mt-1 text-3xl font-bold text-emerald-600">{{ counts.ready }} <span class="text-base font-semibold text-slate-400">/ {{ ready_pct }}%</span></div>
+      </div>
+
+      <div class="card-hover rounded-xl border border-slate-200 bg-white p-3">
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-semibold text-slate-500">Not Started</span>
+          <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-50 text-rose-600"><i data-lucide="alert-circle" class="h-4 w-4"></i></span>
+        </div>
+        <div class="mt-1 text-3xl font-bold text-rose-600">{{ counts.not_started }}</div>
+      </div>
+
+      <div class="card-hover rounded-xl border border-slate-200 bg-white p-3">
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-semibold text-slate-500">In Progress</span>
+          <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-amber-600"><i data-lucide="clock" class="h-4 w-4"></i></span>
+        </div>
+        <div class="mt-1 text-3xl font-bold text-amber-600">{{ counts.in_progress }}</div>
+      </div>
+
+      <div class="card-hover rounded-xl border border-slate-200 bg-white p-3">
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-semibold text-slate-500">Docs Filed / 7d</span>
+          <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-indigo-600"><i data-lucide="trending-up" class="h-4 w-4"></i></span>
+        </div>
+        <div class="mt-1 text-3xl font-bold text-slate-900">{{ docs_filed_this_week }}</div>
+        <svg class="mt-1 block" width="100%" height="20" viewBox="0 0 100 22" preserveAspectRatio="none">
+          <polyline points="{{ spark_polyline }}" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></polyline>
+        </svg>
+      </div>
+
+      <div class="card-hover rounded-xl border border-slate-200 bg-white p-3">
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-semibold text-slate-500">In Review Queue</span>
+          <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-500"><i data-lucide="inbox" class="h-4 w-4"></i></span>
+        </div>
+        <div class="mt-1 text-3xl font-bold text-slate-900">{{ review_count }}</div>
+      </div>
     </div>
 
-    <table class="w-full text-sm">
-      <thead>
-        <tr class="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-400">
-          <th class="px-5 py-2.5 font-medium">Client</th>
-          <th class="px-5 py-2.5 font-medium">PAN</th>
-          <th class="px-5 py-2.5 font-medium">Categories</th>
-          <th class="px-5 py-2.5 font-medium">Status</th>
-          <th class="px-5 py-2.5"></th>
-        </tr>
-      </thead>
-      <tbody id="client-rows-body">
-        {% for client, status in rows %}
-        <tr onclick="window.location='{% url 'portal:client_detail' client.pk %}'" data-search="{{ client.name|lower }} {{ client.pan|lower }}" class="cursor-pointer border-b border-slate-50 last:border-0 hover:bg-slate-50">
-          <td class="px-5 py-3 font-medium text-slate-800">{{ client.name }}</td>
-          <td class="px-5 py-3 font-mono text-xs text-slate-500">{{ client.pan }}</td>
-          <td class="px-5 py-3">
-            <div class="flex flex-wrap gap-1">
-              {% for cat in client.categories.all %}
-              <span class="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] text-slate-600">{{ cat.name }}</span>
+    <!-- trio: status split / deadline / reminder funnel -->
+    <div class="mt-3 grid grid-cols-3 gap-3">
+      <div class="rounded-xl border border-slate-200 bg-white p-3">
+        <p class="text-base font-semibold text-slate-800">Status split</p>
+        <div class="mt-2 flex items-center gap-4">
+          <svg width="88" height="88" viewBox="0 0 42 42">
+            <circle cx="21" cy="21" r="15.9" fill="none" stroke="#f1f5f9" stroke-width="6"></circle>
+            {% for seg in donut_segments %}
+            {% if seg.pct > 0 %}
+            <circle cx="21" cy="21" r="15.9" fill="none" stroke="{{ seg.color }}" stroke-width="6"
+              stroke-dasharray="{{ seg.pct }} {{ seg.remainder }}" stroke-dashoffset="{{ seg.offset }}"
+              transform="rotate(-90 21 21)"></circle>
+            {% endif %}
+            {% endfor %}
+            <text x="21" y="19.5" text-anchor="middle" font-size="7.5" font-weight="800" fill="#0f172a">{{ total_clients }}</text>
+            <text x="21" y="26" text-anchor="middle" font-size="3.6" fill="#94a3b8">clients</text>
+          </svg>
+          <div class="space-y-2 text-sm">
+            <div class="flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-full bg-emerald-500"></span>Ready <b class="ml-auto font-semibold">{{ counts.ready }}</b></div>
+            <div class="flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-full bg-amber-500"></span>In Progress <b class="font-semibold">{{ counts.in_progress }}</b></div>
+            <div class="flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-full bg-rose-500"></span>Not Started <b class="font-semibold">{{ counts.not_started }}</b></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rounded-xl border border-slate-200 bg-white p-3">
+        <p class="text-base font-semibold text-slate-800">Filing deadline</p>
+        <div class="mt-2 flex items-center gap-3">
+          <svg width="56" height="56" viewBox="0 0 42 42">
+            <circle cx="21" cy="21" r="17" fill="none" stroke="#f1f5f9" stroke-width="4"></circle>
+            <circle cx="21" cy="21" r="17" fill="none" stroke="#8b5cf6" stroke-width="4" stroke-linecap="round"
+              stroke-dasharray="{{ deadline_ring_dasharray }}" transform="rotate(-90 21 21)"></circle>
+          </svg>
+          <div>
+            <div class="text-3xl font-bold text-slate-900">{{ days_left }}</div>
+            <p class="text-sm text-slate-500">days to go</p>
+            <p class="mt-1 text-sm font-semibold text-slate-500">Individual ITR &middot; {{ deadline|date:"d M Y" }}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="rounded-xl border border-slate-200 bg-white p-3">
+        <div class="flex items-center justify-between">
+          <p class="text-base font-semibold text-slate-800">Reminder funnel</p>
+          <span class="text-xs text-slate-400">this month</span>
+        </div>
+        <div class="mt-2 flex h-[72px] items-end gap-2.5 px-1">
+          <div class="flex flex-1 flex-col items-center justify-end gap-1.5">
+            <span class="text-sm font-bold text-slate-800">{{ stage1_sent }}</span>
+            <div class="w-full max-w-[38px] rounded-t-md bg-indigo-500" style="height: {{ stage1_pct }}%;"></div>
+            <span class="text-center text-xs leading-tight text-slate-500">Stage 1<br>sent</span>
+          </div>
+          <div class="flex flex-1 flex-col items-center justify-end gap-1.5">
+            <span class="text-sm font-bold text-slate-800">{{ stage2_sent }}</span>
+            <div class="w-full max-w-[38px] rounded-t-md bg-violet-500" style="height: {{ stage2_pct }}%;"></div>
+            <span class="text-center text-xs leading-tight text-slate-500">Stage 2<br>sent</span>
+          </div>
+          <div class="flex flex-1 flex-col items-center justify-end gap-1.5">
+            <span class="text-sm font-bold text-slate-800">{{ now_ready }}</span>
+            <div class="w-full max-w-[38px] rounded-t-md bg-emerald-500" style="height: {{ now_ready_pct }}%;"></div>
+            <span class="text-center text-xs leading-tight text-slate-500">Now<br>Ready</span>
+          </div>
+        </div>
+        <p class="mt-2 text-xs text-slate-400">No open/click tracking &mdash; out of scope by design.</p>
+      </div>
+    </div>
+
+    <!-- heatmap: full width -->
+    <div class="mt-3 rounded-xl border border-slate-200 bg-white p-3">
+      <div class="flex items-baseline justify-between">
+        <p class="text-base font-semibold text-slate-800">Who needs the most chasing</p>
+        <span class="text-xs text-slate-400">{{ heat_rows|length }} least-complete client(s), of {{ total_clients }} &middot; bottom row = % filed</span>
+      </div>
+      <p class="mt-1 text-sm text-slate-500">Each cell is one required document for that client this AY. Sorted worst-first.</p>
+      {% if heat_rows %}
+      <div class="mt-3 overflow-x-auto">
+        <table class="border-collapse text-sm">
+          <thead>
+            <tr>
+              <th class="w-32"></th>
+              {% for code in heat_codes %}
+              <th class="px-0.5 pb-1 text-center font-mono text-[10px] font-semibold text-slate-400" style="writing-mode: vertical-rl; transform: rotate(180deg);">{{ code }}</th>
               {% endfor %}
+              <th class="w-12"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in heat_rows %}
+            <tr>
+              <td class="whitespace-nowrap py-0.5 pr-2 text-sm font-medium text-slate-700">
+                <a href="{% url 'portal:client_detail' row.client.pk %}" class="hover:underline">{{ row.client.name }}</a>{% if row.ready %} <span class="text-emerald-500">&check;</span>{% endif %}
+              </td>
+              {% for cell in row.cells %}
+              <td class="p-0.5">
+                {% if cell.state == 'recv' %}
+                <div class="flex h-7 w-9 items-center justify-center rounded-md bg-emerald-500 text-xs font-bold text-white" title="{{ cell.code }} — received">&check;</div>
+                {% elif cell.state == 'miss' %}
+                <div class="flex h-7 w-9 items-center justify-center rounded-md bg-rose-500 text-xs font-bold text-white" title="{{ cell.code }} — missing">&times;</div>
+                {% else %}
+                <div class="flex h-7 w-9 items-center justify-center rounded-md border border-dashed border-slate-300 text-xs font-bold text-slate-300" title="{{ cell.code }} — not required">&ndash;</div>
+                {% endif %}
+              </td>
+              {% endfor %}
+              <td class="py-0.5 pl-2 text-right text-sm font-bold {% if row.pct >= 70 %}text-emerald-600{% elif row.pct >= 40 %}text-amber-600{% else %}text-rose-600{% endif %}">{{ row.pct }}%</td>
+            </tr>
+            {% endfor %}
+            <tr>
+              <td class="pt-2 text-xs font-semibold uppercase tracking-wide text-slate-400">% filed</td>
+              {% for foot in heat_footer %}
+              <td class="pt-2 text-center text-xs font-bold {% if foot.pct >= 70 %}text-emerald-600{% elif foot.pct >= 40 %}text-amber-600{% else %}text-rose-600{% endif %}">{{ foot.pct }}%</td>
+              {% endfor %}
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="mt-3 flex flex-wrap gap-4 text-sm text-slate-500">
+        <span class="flex items-center gap-1.5"><span class="flex h-4 w-4 items-center justify-center rounded bg-emerald-500 text-[9px] text-white">&check;</span>Received</span>
+        <span class="flex items-center gap-1.5"><span class="flex h-4 w-4 items-center justify-center rounded bg-rose-500 text-[9px] text-white">&times;</span>Missing</span>
+        <span class="flex items-center gap-1.5"><span class="flex h-4 w-4 items-center justify-center rounded border border-dashed border-slate-300 text-[9px] text-slate-300">&ndash;</span>Not required for this client</span>
+      </div>
+      {% else %}
+      <p class="mt-3 text-sm text-slate-400">No client currently has any required documents configured.</p>
+      {% endif %}
+    </div>
+
+    <!-- 2x2: client-mix/bottleneck, activity/reminders -->
+    <div class="mt-3 grid grid-cols-2 gap-3">
+      <div class="rounded-xl border border-slate-200 bg-white p-3">
+        <p class="text-base font-semibold text-slate-800">Client mix by category</p>
+        <div class="mt-2 space-y-2">
+          {% for cat in category_mix %}
+          {% if cat.client_count %}
+          <div class="grid grid-cols-[120px_1fr_28px] items-center gap-2 text-sm">
+            <span class="truncate font-medium text-slate-600">{{ cat.name }}</span>
+            <div class="h-2.5 overflow-hidden rounded-full bg-slate-100">
+              <div class="h-full rounded-full bg-gradient-to-r from-violet-500 to-indigo-500" style="width: {% widthratio cat.client_count max_cat 100 %}%;"></div>
             </div>
-          </td>
-          <td class="px-5 py-3">
-            <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ring-1
-              {% if status.status == 'ready' %}bg-emerald-50 text-emerald-700 ring-emerald-200
-              {% elif status.status == 'in_progress' %}bg-amber-50 text-amber-700 ring-amber-200
-              {% else %}bg-rose-50 text-rose-700 ring-rose-200{% endif %}">
-              <span class="h-1.5 w-1.5 rounded-full
-                {% if status.status == 'ready' %}bg-emerald-500
-                {% elif status.status == 'in_progress' %}bg-amber-500
-                {% else %}bg-rose-500{% endif %}"></span>
-              {{ status.label }}
-            </span>
-          </td>
-          <td class="px-5 py-3 text-right"><i data-lucide="chevron-right" class="inline h-[15px] w-[15px] text-slate-300"></i></td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+            <span class="text-right font-bold text-slate-500">{{ cat.client_count }}</span>
+          </div>
+          {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="rounded-xl border border-slate-200 bg-white p-3">
+        <div class="flex items-baseline justify-between">
+          <p class="text-base font-semibold text-slate-800">Firm-wide bottleneck</p>
+          <span class="text-xs text-slate-400">clients missing each doc</span>
+        </div>
+        <p class="mt-1 text-sm text-slate-500">A single broadcast reminder beats chasing one by one.</p>
+        {% if bottleneck_radar %}
+        <div class="mt-1 flex justify-center">
+          <svg width="{{ bottleneck_radar.size }}" height="{{ bottleneck_radar.size }}" viewBox="0 0 {{ bottleneck_radar.size }} {{ bottleneck_radar.size }}">
+            {% for ring in bottleneck_radar.grid_rings %}
+            <polygon points="{{ ring }}" fill="none" stroke="#e2e8f0" stroke-width="1"></polygon>
+            {% endfor %}
+            {% for axis in bottleneck_radar.axes %}
+            <line x1="{{ axis.x1 }}" y1="{{ axis.y1 }}" x2="{{ axis.x2 }}" y2="{{ axis.y2 }}" stroke="#e2e8f0" stroke-width="1"></line>
+            <text x="{{ axis.label_x }}" y="{{ axis.label_y }}" text-anchor="middle" dominant-baseline="middle" font-size="7" font-weight="700" fill="#64748b" font-family="monospace">{{ axis.label }}</text>
+            {% endfor %}
+            <polygon points="{{ bottleneck_radar.data_polygon }}" fill="rgba(244,63,94,0.18)" stroke="#f43f5e" stroke-width="2" stroke-linejoin="round"></polygon>
+            {% for dot in bottleneck_radar.data_dots %}
+            <circle cx="{{ dot.x }}" cy="{{ dot.y }}" r="2.5" fill="#f43f5e"></circle>
+            {% endfor %}
+          </svg>
+        </div>
+        <p class="text-center text-xs text-slate-400">missing count per doc, of {{ total_clients }} client(s)</p>
+        {% else %}
+        <div class="mt-2 space-y-2">
+          {% for row in bottleneck_rows %}
+          <div class="grid grid-cols-[76px_1fr_24px] items-center gap-2 text-sm">
+            <span class="font-mono font-semibold text-slate-700">{{ row.code }}</span>
+            <div class="h-2.5 overflow-hidden rounded-full bg-slate-100">
+              <div class="h-full rounded-full bg-gradient-to-r from-indigo-500 to-rose-500" style="width: {{ row.pct }}%;"></div>
+            </div>
+            <span class="text-right font-bold text-slate-500">{{ row.count }}</span>
+          </div>
+          {% empty %}
+          <p class="text-sm text-slate-400">No missing documents &mdash; everyone's caught up.</p>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="rounded-xl border border-slate-200 bg-white p-3">
+        <div class="flex items-baseline justify-between">
+          <p class="text-base font-semibold text-slate-800">Recent activity</p>
+          <span class="text-xs text-slate-400">last 5 events</span>
+        </div>
+        <div class="mt-1">
+          {% for item in activity %}
+          <div class="flex items-start gap-2.5 border-b border-slate-50 py-2 last:border-0">
+            <span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-400"></span>
+            <div>
+              <p class="text-sm leading-snug text-slate-700">{{ item.text }}</p>
+              <p class="mt-0.5 text-xs text-slate-400">{{ item.ts|timesince }} ago</p>
+            </div>
+          </div>
+          {% empty %}
+          <p class="py-2 text-sm text-slate-400">Nothing's happened yet.</p>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="rounded-xl border border-slate-200 bg-white p-3">
+        <div class="flex items-baseline justify-between">
+          <p class="text-base font-semibold text-slate-800">Reminders sent &mdash; by staff</p>
+          <span class="text-xs text-slate-400">this month</span>
+        </div>
+        <div class="mt-2 space-y-2">
+          {% for row in leaderboard %}
+          <div class="flex items-center gap-2.5">
+            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-fuchsia-500 text-xs font-bold text-white">{{ row.sent_by__username|slice:":2"|upper }}</span>
+            <span class="flex-1 text-sm font-medium text-slate-700">{{ row.sent_by__username }}</span>
+            <span class="text-sm font-bold text-slate-500">{{ row.n }}</span>
+          </div>
+          {% empty %}
+          <p class="text-sm text-slate-400">No reminders sent yet this month.</p>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
   </div>
+  {% endif %}
   <div class="h-8"></div>
 </div>
-<script>
-(function () {
-  var input = document.getElementById('client-filter-input');
-  if (!input) return;
-  var rows = Array.prototype.slice.call(document.querySelectorAll('#client-rows-body tr'));
-  var countEl = document.getElementById('client-shown-count');
-  input.addEventListener('input', function () {
-    var q = input.value.trim().toLowerCase();
-    var shown = 0;
-    rows.forEach(function (row) {
-      var match = !q || row.getAttribute('data-search').indexOf(q) !== -1;
-      row.classList.toggle('hidden', !match);
-      if (match) shown++;
-    });
-    countEl.textContent = shown;
-  });
-})();
-</script>
 {% endblock %}

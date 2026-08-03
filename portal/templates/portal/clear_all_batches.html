@@ -1,0 +1,45 @@
+{% extends "portal/base.html" %}
+{% block title %}Clear Batch History — TaxVault{% endblock %}
+
+{% block content %}
+<div class="flex-1 overflow-auto">
+  <div class="border-b border-slate-200 bg-white px-8 py-6">
+    <h1 class="text-xl font-semibold text-slate-900">Clear Batch History</h1>
+    <p class="mt-0.5 text-sm text-slate-500">Wipe {{ profile.firm.name }}'s document intake history to start fresh.</p>
+  </div>
+
+  <div class="px-8 py-6">
+    <div class="max-w-lg rounded-xl border border-rose-200 bg-rose-50 p-6">
+      <div class="flex items-start gap-3">
+        <i data-lucide="alert-triangle" class="mt-0.5 h-5 w-5 shrink-0 text-rose-600"></i>
+        <div>
+          <h2 class="text-sm font-semibold text-rose-800">This cannot be undone</h2>
+          <p class="mt-1 text-sm text-rose-700">This will permanently delete:</p>
+          <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-rose-700">
+            <li><strong>{{ batch_count }}</strong> batch(es) from Document Intake</li>
+            <li><strong>{{ doc_count }}</strong> document(s) &mdash; filed, review-queue, and skipped &mdash; including their files</li>
+          </ul>
+          <p class="mt-3 text-sm text-rose-700">
+            Clients are not affected. Batch numbering restarts from #1 only if no other firm
+            on this system currently has any batch/document records.
+          </p>
+        </div>
+      </div>
+
+      <form method="post" class="mt-5 space-y-4" onsubmit="return confirm('Really delete {{ batch_count }} batch(es) and {{ doc_count }} document(s)? This cannot be undone.');">
+        {% csrf_token %}
+        <input type="hidden" name="confirm" value="yes">
+        <div class="flex items-center gap-3">
+          <button type="submit" class="rounded-lg bg-rose-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-rose-700">
+            Yes, clear all batches
+          </button>
+          <a href="{% url 'portal:intake' %}" class="rounded-lg border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50">
+            Cancel
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+  <div class="h-8"></div>
+</div>
+{% endblock %}

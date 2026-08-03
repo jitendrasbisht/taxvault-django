@@ -171,7 +171,7 @@ If zero required docs received → Status: "Not Started"
 ```
 
 - `MISC` documents never count toward Received until manually reclassified.
-- This status must be viewable per client (a list/dashboard view is in scope; do not build any charts, analytics, or trend visualizations beyond this simple per-client status list).
+- This status must be viewable per client (a list/dashboard view is in scope). ~~Do not build any charts, analytics, or trend visualizations beyond this simple per-client status list.~~ **Superseded — see Section 18.** The CA explicitly requested a real analytics Dashboard (charts/heatmap included) after an extended mockup review; this restriction no longer applies to the Dashboard page specifically. The per-client status list itself is unchanged.
 - **The Client Vault view shows only the currently selected/active AY's documents by default.** Since the folder structure is nested by AY (Section 8), prior years exist on disk but are not surfaced in the default view. A simple AY switcher/dropdown on the client page (to browse a different year's folder) may be added later — **do not build this in MVP1**; default view = current AY only.
 
 ---
@@ -249,7 +249,7 @@ Exactly two roles — do not add more:
 - Per-client staff assignment
 - Audit trail / activity logs
 - Firm self-signup or billing
-- Any analytics, charts, trend dashboards beyond the simple Ready/In Progress/Not Started status list
+- ~~Any analytics, charts, trend dashboards beyond the simple Ready/In Progress/Not Started status list~~ — **superseded, see Section 18**
 - Confidence scoring or auto-suggestion UI in the Review Queue
 - Any integration with external ITR filing tools
 - Auto-creation of client records from incoming documents
@@ -265,6 +265,17 @@ Exactly two roles — do not add more:
 - Email: transactional provider (e.g., SES/Mailgun/Postmark) — outbound only for MVP1
 - Background jobs: Celery/Django-Q + Redis (for batch folder intake)
 - Hosting: cost-conscious, scale-to-zero preferred (e.g., Neon + Cloud Run) given seasonal usage pattern
+
+---
+
+## 18. Addendum — Firm Dashboard (approved deviation from the MVP1 lock)
+
+Approved explicitly by the CA on 2026-08-02, after an extended visual mockup/brainstorm session, overriding the "no charts/analytics" restriction in Sections 9 and 16 **for the Dashboard page only**. Everything else in this document remains locked as written.
+
+- **Dashboard is now split from Clients.** `/` is a firm-level analytics summary; the searchable/editable client table (previously at `/`) moved to `/clients/`.
+- **What's on the Dashboard:** KPI tiles (total clients, Ready/In Progress/Not Started, docs filed this week with a sparkline, review queue size), a status-split donut, a filing-deadline countdown, a reminder-stage funnel (sent → still-missing → now-Ready — **no open/click tracking**, that exclusion in Section 11 still applies), a client × doc-code completion heatmap for the least-complete clients, a firm-wide "which doc code blocks the most clients" bar chart, client mix by category, a recent-activity feed (documents filed, reminders sent, clients added — bounded to the last handful of events, not a queryable log), and reminders-sent-by-staff.
+- **Reminders-sent-by-staff required one small schema addition:** `ReminderLog.sent_by` (who triggered the send). This is the same "light touch, not audit trail" pattern already approved for `Client.last_edited_by` — a single latest-value field, not a history log — so it does not reopen Section 14/16's "no audit trail" exclusion.
+- **Recent-activity feed is not an audit trail:** it's a short, bounded, computed-on-the-fly list for the Dashboard, not a stored/queryable/filterable log of actions.
 
 ---
 

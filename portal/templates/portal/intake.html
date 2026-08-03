@@ -24,7 +24,7 @@
           <label class="text-xs font-medium text-slate-500">Assessment Year</label>
           <input type="text" name="ay" value="{{ ay }}" class="flex-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs">
         </div>
-        <button type="submit" class="mt-2 w-full rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-slate-800">
+        <button type="submit" class="btn-primary mt-2 w-full rounded-lg px-5 py-2.5 text-sm font-medium text-white">
           Start Batch
         </button>
       </form>
@@ -32,8 +32,13 @@
 
     {% if recent_batches %}
     <div class="mt-6 rounded-xl border border-slate-200 bg-white">
-      <div class="border-b border-slate-100 px-5 py-3">
+      <div class="flex items-center justify-between border-b border-slate-100 px-5 py-3">
         <h2 class="text-sm font-semibold text-slate-800">Recent Batches</h2>
+        {% if profile.role == 'firm_admin' %}
+        <a href="{% url 'portal:clear_all_batches' %}" class="flex items-center gap-1 text-xs font-medium text-rose-600 hover:underline">
+          <i data-lucide="trash-2" class="h-3 w-3"></i> Clear All
+        </a>
+        {% endif %}
       </div>
       <table class="w-full text-xs">
         <thead>

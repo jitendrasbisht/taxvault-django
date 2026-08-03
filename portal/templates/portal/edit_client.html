@@ -1,0 +1,79 @@
+{% extends "portal/base.html" %}
+{% block title %}Edit {{ client.name }} — TaxVault{% endblock %}
+
+{% block content %}
+<div class="flex-1 overflow-auto">
+  <div class="border-b border-slate-200 bg-white px-8 py-6">
+    <a href="{% url 'portal:client_detail' client.pk %}" class="mb-2 flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700">
+      <i data-lucide="arrow-left" class="h-3.5 w-3.5"></i> Back to {{ client.name }}
+    </a>
+    <h1 class="text-xl font-semibold text-slate-900">Edit Client</h1>
+    <p class="mt-0.5 text-sm text-slate-500">Update {{ client.name }}'s details. Firm Admin only.</p>
+  </div>
+
+  <div class="px-8 py-6">
+    <div class="max-w-lg rounded-xl border border-slate-200 bg-white p-6">
+      <form method="post" class="space-y-4">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+        <div class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+          {{ form.non_field_errors }}
+        </div>
+        {% endif %}
+
+        <div>
+          <label class="mb-1 block text-xs font-medium text-slate-500">{{ form.pan.label }} <span class="text-rose-600">*</span></label>
+          {{ form.pan }}
+          <p class="mt-1 text-xs text-slate-400">Changing this renames the client's record and vault folder — it does not create a new client.</p>
+          {% if form.pan.errors %}<p class="mt-1 text-xs text-rose-600">{{ form.pan.errors|join:", " }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="mb-1 block text-xs font-medium text-slate-500">{{ form.name.label }} <span class="text-rose-600">*</span></label>
+          {{ form.name }}
+          {% if form.name.errors %}<p class="mt-1 text-xs text-rose-600">{{ form.name.errors|join:", " }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="mb-1 block text-xs font-medium text-slate-500">{{ form.phone.label }} <span class="text-rose-600">*</span></label>
+          {{ form.phone }}
+          {% if form.phone.errors %}<p class="mt-1 text-xs text-rose-600">{{ form.phone.errors|join:", " }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="mb-1 block text-xs font-medium text-slate-500">{{ form.email.label }} <span class="text-rose-600">*</span></label>
+          {{ form.email }}
+          {% if form.email.errors %}<p class="mt-1 text-xs text-rose-600">{{ form.email.errors|join:", " }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="mb-1 block text-xs font-medium text-slate-500">{{ form.aadhar.label }}</label>
+          {{ form.aadhar }}
+          <p class="mt-1 text-xs text-slate-400">
+            {% if client.aadhar_masked %}Currently on file: <span class="font-mono">{{ client.aadhar_masked }}</span>. {% endif %}
+            Leave blank to keep it unchanged — never stored in plaintext, only a masked value and a hash are kept.
+          </p>
+          {% if form.aadhar.errors %}<p class="mt-1 text-xs text-rose-600">{{ form.aadhar.errors|join:", " }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="mb-1.5 block text-xs font-medium text-slate-500">{{ form.categories.label }} <span class="text-rose-600">*</span></label>
+          <div class="grid grid-cols-2 gap-x-3 gap-y-1.5 rounded-lg border border-slate-200 bg-slate-50 p-3">
+            {% for checkbox in form.categories %}
+            <label class="flex items-center gap-2 text-sm text-slate-700">
+              {{ checkbox.tag }} {{ checkbox.choice_label }}
+            </label>
+            {% endfor %}
+          </div>
+          {% if form.categories.errors %}<p class="mt-1 text-xs text-rose-600">{{ form.categories.errors|join:", " }}</p>{% endif %}
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button type="submit" class="btn-primary flex-1 rounded-lg px-5 py-2.5 text-sm font-medium text-white">
+            Save Changes
+          </button>
+          <a href="{% url 'portal:client_detail' client.pk %}" class="rounded-lg border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50">
+            Cancel
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+  <div class="h-8"></div>
+</div>
+{% endblock %}

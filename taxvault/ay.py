@@ -15,3 +15,14 @@ def current_assessment_year(as_of=None):
     start_year = as_of.year if as_of.month >= 4 else as_of.year - 1
     end_year_short = (start_year + 1) % 100
     return f"{start_year}-{end_year_short:02d}"
+
+
+def next_filing_deadline(as_of=None):
+    """Individual ITR filing deadline for the current AY (Section 18 Dashboard addendum,
+    not part of the locked AY logic itself) — conventionally 31 July of the calendar year
+    after the AY period (labeled per this app's own AY convention) ends. Returns a date."""
+    import datetime
+
+    as_of = as_of or timezone.localdate()
+    start_year = as_of.year if as_of.month >= 4 else as_of.year - 1
+    return datetime.date(start_year + 1, 7, 31)

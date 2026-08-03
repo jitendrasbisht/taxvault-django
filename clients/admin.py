@@ -201,7 +201,7 @@ class ClientAdmin(ProfileRequiredMixin, FirmScopedAdminMixin, admin.ModelAdmin):
     def send_initial_request_action(self, request, queryset):
         count = 0
         for client in queryset:
-            send_initial_request(client)
+            send_initial_request(client, sent_by=request.user)
             count += 1
         messages.success(request, f"Sent initial request to {count} client(s).")
 
@@ -209,7 +209,7 @@ class ClientAdmin(ProfileRequiredMixin, FirmScopedAdminMixin, admin.ModelAdmin):
     def send_followup_action(self, request, queryset):
         sent, skipped = 0, 0
         for client in queryset:
-            if send_followup(client):
+            if send_followup(client, sent_by=request.user):
                 sent += 1
             else:
                 skipped += 1
@@ -259,7 +259,8 @@ class ClientAdmin(ProfileRequiredMixin, FirmScopedAdminMixin, admin.ModelAdmin):
                 category_names = [c.name for c in cd["categories"]]
                 try:
                     client, created = upsert_client(
-                        cd["firm"], cd["pan"], cd["name"], cd["phone"], cd["email"], cd["aadhar"], category_names
+                        cd["firm"], cd["pan"], cd["name"], cd["phone"], cd["email"], cd["aadhar"], category_names,
+                        edited_by=request.user,
                     )
                 except ClientDataError as exc:
                     form.add_error(None, str(exc))

@@ -18,7 +18,7 @@ def _doc_code_display_names(firm, codes):
     return sorted(lookup.get(code, code) for code in codes)
 
 
-def send_initial_request(client):
+def send_initial_request(client, sent_by=None):
     """Stage 1: one individually-addressed email listing the client's full Required Docs
     list (friendly names), regardless of what's already been received."""
     names = _doc_code_display_names(client.firm, client.required_doc_codes().values_list("code", flat=True))
@@ -31,11 +31,12 @@ def send_initial_request(client):
     )
     send_mail(subject, body, settings.DEFAULT_FROM_EMAIL, [client.email])
     ReminderLog.objects.create(
-        firm=client.firm, client=client, stage=ReminderLog.STAGE_INITIAL, subject=subject, body=body
+        firm=client.firm, client=client, stage=ReminderLog.STAGE_INITIAL, subject=subject, body=body,
+        sent_by=sent_by,
     )
 
 
-def send_followup(client):
+def send_followup(client, sent_by=None):
     """Stage 2: recalculates Required - Received at send time and lists only what's still
     missing. Returns False (no email sent, no log entry) if the client is already Ready."""
     status = compute_itr_status(client)
@@ -52,6 +53,7 @@ def send_followup(client):
     )
     send_mail(subject, body, settings.DEFAULT_FROM_EMAIL, [client.email])
     ReminderLog.objects.create(
-        firm=client.firm, client=client, stage=ReminderLog.STAGE_FOLLOWUP, subject=subject, body=body
+        firm=client.firm, client=client, stage=ReminderLog.STAGE_FOLLOWUP, subject=subject, body=body,
+        sent_by=sent_by,
     )
     return True

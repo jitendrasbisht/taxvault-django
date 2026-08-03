@@ -7,51 +7,80 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    html, body { font-family: 'Inter', ui-sans-serif, system-ui, sans-serif; }
+    .brand-gradient { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 55%, #d946ef 100%); }
+    .btn-primary {
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+      box-shadow: 0 4px 14px -4px rgba(99, 102, 241, 0.45);
+      transition: all 0.15s ease;
+    }
+    .btn-primary:hover { background: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%); box-shadow: 0 6px 18px -4px rgba(99, 102, 241, 0.55); transform: translateY(-1px); }
+    .card-hover { transition: all 0.15s ease; }
+    .card-hover:hover { transform: translateY(-1px); box-shadow: 0 8px 20px -8px rgba(15, 23, 42, 0.15); }
+    @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+    .float-anim { animation: float 3.5s ease-in-out infinite; }
+    @keyframes draw-check { to { stroke-dashoffset: 0; } }
+    .check-draw { stroke-dasharray: 24; stroke-dashoffset: 24; animation: draw-check 0.5s ease forwards 0.15s; }
+    @keyframes fade-up { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+    .fade-up { animation: fade-up 0.35s ease both; }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+  </style>
 </head>
 <body class="h-screen overflow-hidden bg-slate-50 font-sans antialiased">
   <div class="flex h-screen w-full overflow-hidden">
     <!-- Sidebar -->
-    <div class="flex w-56 shrink-0 flex-col bg-slate-950 p-4">
+    <div class="flex w-56 shrink-0 flex-col p-4" style="background: linear-gradient(180deg, #04070f 0%, #071f36 45%, #014f86 100%);">
       <div class="mb-6 flex items-center gap-2 px-1">
-        <div class="flex h-7 w-7 items-center justify-center rounded-md bg-sky-500 text-xs font-bold text-white">TV</div>
+        <div class="brand-gradient flex h-7 w-7 items-center justify-center rounded-md text-xs font-bold text-white shadow-lg shadow-indigo-500/30">TV</div>
         <span class="text-sm font-bold tracking-wide text-white">TaxVault</span>
       </div>
       <div class="space-y-1">
         {% url 'portal:dashboard' as dashboard_url %}
+        {% url 'portal:clients_list' as clients_url %}
         {% url 'portal:intake' as intake_url %}
         {% url 'portal:review_queue' as review_url %}
         {% url 'portal:reminders' as reminders_url %}
         {% url 'portal:settings' as settings_url %}
+        {% url 'portal:about' as about_url %}
 
-        <a href="{{ dashboard_url }}" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors {% if active_nav == 'dashboard' %}bg-white/10 font-medium text-white{% else %}text-slate-300 hover:bg-white/5 hover:text-white{% endif %}">
+        <a href="{{ dashboard_url }}" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all {% if active_nav == 'dashboard' %}bg-gradient-to-r from-indigo-500/25 to-violet-500/10 font-medium text-white ring-1 ring-inset ring-indigo-400/20{% else %}text-slate-300 hover:bg-white/5 hover:text-white{% endif %}">
           <i data-lucide="layout-dashboard" class="h-[17px] w-[17px]"></i>
           <span class="flex-1 text-left">Dashboard</span>
         </a>
-        <a href="{{ intake_url }}" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors {% if active_nav == 'intake' %}bg-white/10 font-medium text-white{% else %}text-slate-300 hover:bg-white/5 hover:text-white{% endif %}">
+        <a href="{{ intake_url }}" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all {% if active_nav == 'intake' %}bg-gradient-to-r from-indigo-500/25 to-violet-500/10 font-medium text-white ring-1 ring-inset ring-indigo-400/20{% else %}text-slate-300 hover:bg-white/5 hover:text-white{% endif %}">
           <i data-lucide="upload" class="h-[17px] w-[17px]"></i>
           <span class="flex-1 text-left">Document Intake</span>
         </a>
-        <a href="{{ dashboard_url }}" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors {% if active_nav == 'dashboard' %}bg-white/10 font-medium text-white{% else %}text-slate-300 hover:bg-white/5 hover:text-white{% endif %}">
+        <a href="{{ clients_url }}" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all {% if active_nav == 'clients' %}bg-gradient-to-r from-indigo-500/25 to-violet-500/10 font-medium text-white ring-1 ring-inset ring-indigo-400/20{% else %}text-slate-300 hover:bg-white/5 hover:text-white{% endif %}">
           <i data-lucide="users" class="h-[17px] w-[17px]"></i>
           <span class="flex-1 text-left">Clients</span>
-          <span class="rounded-full px-1.5 py-0.5 text-[11px] {% if active_nav == 'dashboard' %}bg-white/20 text-white{% else %}bg-white/10 text-slate-300{% endif %}">{{ nav_client_count }}</span>
+          <span class="rounded-full px-1.5 py-0.5 text-[11px] {% if active_nav == 'clients' %}bg-white/20 text-white{% else %}bg-white/10 text-slate-300{% endif %}">{{ nav_client_count }}</span>
         </a>
-        <a href="{{ review_url }}" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors {% if active_nav == 'review' %}bg-white/10 font-medium text-white{% else %}text-slate-300 hover:bg-white/5 hover:text-white{% endif %}">
+        <a href="{{ review_url }}" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all {% if active_nav == 'review' %}bg-gradient-to-r from-indigo-500/25 to-violet-500/10 font-medium text-white ring-1 ring-inset ring-indigo-400/20{% else %}text-slate-300 hover:bg-white/5 hover:text-white{% endif %}">
           <i data-lucide="inbox" class="h-[17px] w-[17px]"></i>
           <span class="flex-1 text-left">Review Queue</span>
-          <span class="rounded-full px-1.5 py-0.5 text-[11px] {% if active_nav == 'review' %}bg-white/20 text-white{% else %}bg-white/10 text-slate-300{% endif %}">{{ nav_review_count }}</span>
+          <span class="rounded-full px-1.5 py-0.5 text-[11px] {% if active_nav == 'review' %}bg-white/20 text-white{% elif nav_review_count %}bg-rose-500 text-white{% else %}bg-white/10 text-slate-300{% endif %}">{{ nav_review_count }}</span>
         </a>
-        <a href="{{ reminders_url }}" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors {% if active_nav == 'reminders' %}bg-white/10 font-medium text-white{% else %}text-slate-300 hover:bg-white/5 hover:text-white{% endif %}">
+        <a href="{{ reminders_url }}" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all {% if active_nav == 'reminders' %}bg-gradient-to-r from-indigo-500/25 to-violet-500/10 font-medium text-white ring-1 ring-inset ring-indigo-400/20{% else %}text-slate-300 hover:bg-white/5 hover:text-white{% endif %}">
           <i data-lucide="mail" class="h-[17px] w-[17px]"></i>
           <span class="flex-1 text-left">Reminders</span>
         </a>
-        <a href="{{ settings_url }}" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors {% if active_nav == 'settings' %}bg-white/10 font-medium text-white{% else %}text-slate-300 hover:bg-white/5 hover:text-white{% endif %}">
+        <a href="{{ settings_url }}" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all {% if active_nav == 'settings' %}bg-gradient-to-r from-indigo-500/25 to-violet-500/10 font-medium text-white ring-1 ring-inset ring-indigo-400/20{% else %}text-slate-300 hover:bg-white/5 hover:text-white{% endif %}">
           <i data-lucide="settings" class="h-[17px] w-[17px]"></i>
           <span class="flex-1 text-left">Settings</span>
         </a>
+        <a href="{{ about_url }}" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all {% if active_nav == 'about' %}bg-gradient-to-r from-indigo-500/25 to-violet-500/10 font-medium text-white ring-1 ring-inset ring-indigo-400/20{% else %}text-slate-300 hover:bg-white/5 hover:text-white{% endif %}">
+          <i data-lucide="info" class="h-[17px] w-[17px]"></i>
+          <span class="flex-1 text-left">About</span>
+        </a>
       </div>
       <div class="mt-auto rounded-lg bg-white/5 p-3">
-        <p class="text-[11px] font-medium text-slate-300">{{ profile.get_role_display }}</p>
+        <p class="text-[11px] font-medium text-indigo-300">{{ profile.get_role_display }}</p>
         <p class="mt-0.5 text-xs text-white">{{ request.user.get_full_name|default:request.user.username }} &middot; {{ profile.firm.name }}</p>
         <form method="post" action="{% url 'portal:logout' %}" class="mt-2">
           {% csrf_token %}
@@ -74,6 +103,33 @@
       {% block content %}{% endblock %}
     </div>
   </div>
+
+  <!-- Reusable document preview side panel — call openPreview(url, filename) instead of
+       linking to the preview URL directly, so viewing a document never triggers a
+       download/new-tab, it just slides in over the current page. -->
+  <div id="preview-backdrop" onclick="closePreview()" class="fixed inset-0 z-40 hidden bg-slate-900/30"></div>
+  <div id="preview-panel" class="fixed right-0 top-0 z-50 flex h-full w-full max-w-2xl translate-x-full transform flex-col bg-white shadow-2xl transition-transform duration-200">
+    <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+      <p id="preview-filename" class="truncate text-sm font-medium text-slate-700"></p>
+      <button type="button" onclick="closePreview()" class="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600">
+        <i data-lucide="x" class="h-4 w-4"></i>
+      </button>
+    </div>
+    <iframe id="preview-iframe" class="flex-1" title="Document preview"></iframe>
+  </div>
+  <script>
+    function openPreview(url, filename) {
+      document.getElementById('preview-iframe').src = url;
+      document.getElementById('preview-filename').textContent = filename || '';
+      document.getElementById('preview-backdrop').classList.remove('hidden');
+      document.getElementById('preview-panel').classList.remove('translate-x-full');
+    }
+    function closePreview() {
+      document.getElementById('preview-panel').classList.add('translate-x-full');
+      document.getElementById('preview-backdrop').classList.add('hidden');
+      setTimeout(function () { document.getElementById('preview-iframe').src = 'about:blank'; }, 200);
+    }
+  </script>
 
   <script>lucide.createIcons();</script>
 </body>

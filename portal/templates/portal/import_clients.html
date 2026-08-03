@@ -1,0 +1,68 @@
+{% extends "portal/base.html" %}
+{% block title %}Import Clients — TaxVault{% endblock %}
+
+{% block content %}
+<div class="flex-1 overflow-auto">
+  <div class="border-b border-slate-200 bg-white px-8 py-6">
+    <h1 class="text-xl font-semibold text-slate-900">Import Clients</h1>
+    <p class="mt-0.5 text-sm text-slate-500">Bulk-add or update clients from a CSV/Excel file &mdash; existing PANs are updated, new PANs are added.</p>
+  </div>
+
+  <div class="px-8 py-6">
+    <div class="rounded-xl border-2 border-dashed border-slate-300 bg-white p-10 text-center">
+      <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-100">
+        <i data-lucide="file-up" class="h-5 w-5 text-slate-500"></i>
+      </div>
+      <p class="mt-4 text-sm font-medium text-slate-700">Choose a CSV or Excel file</p>
+      <p class="mt-1 text-xs text-slate-400">Columns: PAN, Client Name, Phone, Email, Aadhar (optional), Category Tags</p>
+
+      <form method="post" enctype="multipart/form-data" class="mx-auto mt-6 max-w-sm space-y-3">
+        {% csrf_token %}
+        <input type="file" name="file" accept=".csv,.xlsx,.xlsm" required
+               class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none file:mr-3 file:rounded-md file:border-0 file:bg-gradient-to-r file:from-indigo-600 file:to-violet-600 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-white">
+        <button type="submit" class="btn-primary mt-2 w-full rounded-lg px-5 py-2.5 text-sm font-medium text-white">
+          Upload &amp; Import
+        </button>
+      </form>
+    </div>
+
+    {% if result %}
+    <div class="mt-6 rounded-xl border border-slate-200 bg-white">
+      <div class="flex items-center gap-4 border-b border-slate-100 px-5 py-3.5">
+        <h2 class="text-sm font-semibold text-slate-800">Import Result</h2>
+        <span class="ml-auto flex items-center gap-1 text-xs font-medium text-emerald-700">
+          <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span> {{ result.created }} new
+        </span>
+        <span class="flex items-center gap-1 text-xs font-medium text-amber-700">
+          <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span> {{ result.updated }} already existed
+        </span>
+        <span class="flex items-center gap-1 text-xs font-medium text-rose-700">
+          <span class="h-1.5 w-1.5 rounded-full bg-rose-500"></span> {{ result.errors|length }} failed
+        </span>
+      </div>
+      {% if result.errors %}
+      <table class="w-full text-xs">
+        <thead>
+          <tr class="border-b border-slate-100 text-left uppercase tracking-wide text-slate-400">
+            <th class="px-5 py-2 font-medium">Row</th>
+            <th class="px-3 py-2 font-medium">Reason</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for err in result.errors %}
+          <tr class="border-b border-slate-50 last:border-0">
+            <td class="px-5 py-2.5 font-medium text-slate-700">{{ err.row }}</td>
+            <td class="px-3 py-2.5 text-rose-600">{{ err.reason }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p class="px-5 py-4 text-xs text-slate-400">No errors.</p>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+  <div class="h-8"></div>
+</div>
+{% endblock %}
