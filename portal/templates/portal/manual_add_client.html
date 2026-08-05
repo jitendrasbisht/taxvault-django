@@ -45,6 +45,12 @@
           {% if form.aadhar.errors %}<p class="mt-1 text-xs text-rose-600">{{ form.aadhar.errors|join:", " }}</p>{% endif %}
         </div>
         <div>
+          <label class="mb-1 block text-xs font-medium text-slate-500">{{ form.account_number.label }}</label>
+          {{ form.account_number }}
+          <p class="mt-1 text-xs text-slate-400">{{ form.account_number.help_text }}</p>
+          {% if form.account_number.errors %}<p class="mt-1 text-xs text-rose-600">{{ form.account_number.errors|join:", " }}</p>{% endif %}
+        </div>
+        <div>
           <label class="mb-1.5 block text-xs font-medium text-slate-500">{{ form.categories.label }} <span class="text-rose-600">*</span></label>
           <div class="grid grid-cols-2 gap-x-3 gap-y-1.5 rounded-lg border border-slate-200 bg-slate-50 p-3">
             {% for checkbox in form.categories %}

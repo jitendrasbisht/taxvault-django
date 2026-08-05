@@ -5,6 +5,7 @@
 <p><strong>Reason flagged:</strong> {{ document.review_reason }}</p>
 <p><strong>Detected PAN:</strong> {{ document.detected_pan|default:"—" }}
 &nbsp;&nbsp;<strong>Detected Aadhar:</strong> {{ document.detected_aadhar_masked|default:"—" }}
+&nbsp;&nbsp;<strong>Detected Account No.:</strong> {{ document.detected_account|default:"—" }}
 &nbsp;&nbsp;<strong>Detected Phone:</strong> {{ document.detected_phone|default:"—" }}</p>
 {% if document.client %}<p><strong>Matched client:</strong> {{ document.client }}</p>{% endif %}
 <form method="post">

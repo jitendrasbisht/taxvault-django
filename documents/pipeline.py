@@ -82,6 +82,7 @@ def process_batch(batch):
             identifiers["aadhar_digits_list"], match_method == "aadhar", matched_value
         )
         detected_aadhar_masked = _mask_aadhar(detected_aadhar_digits)
+        detected_account = _display_value(identifiers["accounts"], match_method == "account", matched_value)
         detected_phone = _display_value(identifiers["phones"], match_method == "phone", matched_value)
 
         possible_dup = find_possible_duplicate(firm, detected_pan, original_filename) if detected_pan else None
@@ -91,7 +92,7 @@ def process_batch(batch):
             if looks_like_scanned_pdf(text):
                 reason = "This looks like a scanned PDF with no readable text — OCR not available yet."
             elif not any(identifiers.values()):
-                reason = "No PAN/Aadhar/Phone detected in the document."
+                reason = "No PAN/Aadhar/Account Number/Phone detected in the document."
             else:
                 reason = "Detected identifier did not match any client."
             Document.objects.create(
@@ -99,7 +100,7 @@ def process_batch(batch):
                 original_filename=original_filename, content_hash=content_hash,
                 extraction_method=Document.EXTRACTION_TEXT,
                 detected_pan=detected_pan, detected_aadhar_masked=detected_aadhar_masked,
-                detected_phone=detected_phone, match_method=match_method,
+                detected_account=detected_account, detected_phone=detected_phone, match_method=match_method,
                 status=Document.STATUS_REVIEW, review_reason=reason,
                 storage_path=review_path,
                 is_possible_duplicate=bool(possible_dup), duplicate_of=possible_dup,
@@ -116,7 +117,7 @@ def process_batch(batch):
                 original_filename=original_filename, content_hash=content_hash,
                 extraction_method=Document.EXTRACTION_TEXT,
                 detected_pan=detected_pan, detected_aadhar_masked=detected_aadhar_masked,
-                detected_phone=detected_phone, match_method=match_method,
+                detected_account=detected_account, detected_phone=detected_phone, match_method=match_method,
                 status=Document.STATUS_REVIEW,
                 review_reason=f"Possible duplicate of '{possible_dup.original_filename}' (same PAN, similar filename).",
                 storage_path=review_path,
@@ -138,7 +139,7 @@ def process_batch(batch):
             original_filename=original_filename, content_hash=content_hash,
             extraction_method=Document.EXTRACTION_TEXT,
             detected_pan=detected_pan, detected_aadhar_masked=detected_aadhar_masked,
-            detected_phone=detected_phone, match_method=match_method,
+            detected_account=detected_account, detected_phone=detected_phone, match_method=match_method,
             status=Document.STATUS_FILED,
             review_reason="Unclassified — filed as MISC, needs manual reclassification." if is_misc else None,
             storage_path=vault_path, archive_path=archive_path,

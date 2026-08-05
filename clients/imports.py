@@ -19,6 +19,12 @@ HEADER_ALIASES = {
     "email": "email",
     "aadhar": "aadhar",
     "aadhaar": "aadhar",
+    "account number": "account_number",
+    "account no": "account_number",
+    "account no.": "account_number",
+    "bank account no": "account_number",
+    "bank account no.": "account_number",
+    "bank account number": "account_number",
     "category tags": "categories",
     "category": "categories",
     "categories": "categories",
@@ -99,6 +105,7 @@ def import_clients_from_file(firm, file_obj, filename, edited_by=None):
                 row.get("aadhar", ""),
                 category_names,
                 edited_by=edited_by,
+                account_number=row.get("account_number", ""),
             )
         except ClientDataError as exc:
             result.errors.append(ImportError(row=row_num, reason=str(exc)))

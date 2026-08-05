@@ -96,6 +96,14 @@ class Client(models.Model):
     pan = models.CharField(max_length=10, validators=[pan_validator])
     name = models.CharField(max_length=255)
     phone = models.CharField(max_length=20)
+    # Optional 4th matching identifier (approved deviation, Section 19 addendum) — a bank
+    # account number found on a statement, checked after PAN/Aadhar, before Phone. Stored
+    # plaintext like Phone: unlike Aadhar there's no government-ID-specific masking mandate
+    # for it in the locked spec. Comma-separated when a client has more than one bank
+    # account (each produces its own statement/interest certificate) -- not a separate
+    # table, since this is still just "one identifier value" from the matching logic's
+    # perspective, same spirit as Phone being a single field.
+    account_number = models.CharField(max_length=255, null=True, blank=True, default="")
     # Not in Section 2's original field list, but Section 11 (Reminders) requires an
     # individually-addressed email per client and has no other source for one -- added
     # with explicit approval as a gap-fill, same required-ness as Phone.
@@ -140,6 +148,10 @@ class Client(models.Model):
             raise ValidationError({"aadhar": "Aadhar must be exactly 12 digits."})
         self.aadhar_hash = hash_aadhar_digits(digits)
         self.aadhar_masked = f"XXXX-XXXX-{digits[-4:]}"
+
+    def account_number_list(self):
+        """Parses the comma-separated account_number field into individual values."""
+        return [a.strip() for a in (self.account_number or "").split(",") if a.strip()]
 
     def required_doc_codes(self):
         """Required Docs = Base + union of DocCodes from tagged categories (Section 5)."""

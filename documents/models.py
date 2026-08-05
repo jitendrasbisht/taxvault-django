@@ -43,11 +43,13 @@ class Document(models.Model):
 
     MATCH_PAN = "pan"
     MATCH_AADHAR = "aadhar"
+    MATCH_ACCOUNT = "account"
     MATCH_PHONE = "phone"
     MATCH_NONE = "none"
     MATCH_CHOICES = [
         (MATCH_PAN, "PAN"),
         (MATCH_AADHAR, "Aadhar"),
+        (MATCH_ACCOUNT, "Account Number"),
         (MATCH_PHONE, "Phone"),
         (MATCH_NONE, "No match"),
     ]
@@ -73,6 +75,7 @@ class Document(models.Model):
 
     detected_pan = models.CharField(max_length=10, null=True, blank=True)
     detected_aadhar_masked = models.CharField(max_length=14, null=True, blank=True)
+    detected_account = models.CharField(max_length=32, null=True, blank=True)
     detected_phone = models.CharField(max_length=20, null=True, blank=True)
     match_method = models.CharField(max_length=10, choices=MATCH_CHOICES, default=MATCH_NONE)
 

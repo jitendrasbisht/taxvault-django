@@ -1,8 +1,10 @@
 import math
+import shutil
 from collections import Counter
 from datetime import timedelta
 from pathlib import Path
 
+from django.conf import settings
 from django.contrib import messages
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -343,7 +345,7 @@ def manual_add_client_view(request, profile):
             try:
                 client, created = upsert_client(
                     cd["firm"], cd["pan"], cd["name"], cd["phone"], cd["email"], cd["aadhar"], category_names,
-                    edited_by=request.user,
+                    edited_by=request.user, account_number=cd["account_number"],
                 )
             except ClientDataError as exc:
                 form.add_error(None, str(exc))
@@ -375,7 +377,7 @@ def edit_client_view(request, profile, pk):
             try:
                 update_client(
                     client, cd["pan"], cd["name"], cd["phone"], cd["email"], cd["aadhar"], category_names,
-                    edited_by=request.user,
+                    edited_by=request.user, account_number=cd["account_number"],
                 )
             except ClientDataError as exc:
                 form.add_error(None, str(exc))
@@ -390,6 +392,7 @@ def edit_client_view(request, profile, pk):
                 "name": client.name,
                 "phone": client.phone,
                 "email": client.email,
+                "account_number": client.account_number,
                 "categories": client.categories.all(),
             },
         )
@@ -604,6 +607,8 @@ def clear_all_batches_view(request, profile):
     doc_count = Document.objects.filter(firm=firm).count()
 
     if request.method == "POST" and request.POST.get("confirm") == "yes":
+        batch_ids = list(Batch.objects.filter(firm=firm).values_list("id", flat=True))
+
         with transaction.atomic():
             docs = Document.objects.filter(firm=firm)
             for doc in docs:
@@ -620,6 +625,15 @@ def clear_all_batches_view(request, profile):
                 _reset_serial_sequence(Batch)
                 _reset_serial_sequence(Document)
                 sequence_reset = True
+
+        # Belt-and-suspenders: also sweep each cleared batch's on-disk folders directly,
+        # rather than relying only on per-Document unlinking above. A Document row can go
+        # missing (a crashed run, a doc that was manually deleted) while its file is still
+        # sitting in Processed_Archive/Review_Pending -- this is what previously required
+        # a manual rm -rf to fully reset a firm's test data between runs.
+        for batch_id in batch_ids:
+            for folder in ("Processed_Archive", "Review_Pending"):
+                shutil.rmtree(Path(settings.VAULT_ROOT) / folder / f"batch_{batch_id}", ignore_errors=True)
 
         msg = f"Cleared {batch_count} batch(es) and {doc_count} document(s)."
         msg += " Batch numbering restarted from #1." if sequence_reset else (

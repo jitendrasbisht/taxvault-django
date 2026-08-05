@@ -12,6 +12,18 @@ class ClientDataError(Exception):
     """Raised when client data fails validation, from either onboarding path."""
 
 
+def _normalize_account_numbers(raw: str) -> str:
+    """A client can have more than one bank account (Section 19 addendum) -- accepts a
+    comma-separated list, strips whitespace around each entry and drops duplicates/blanks,
+    so "  111, 111,222 " and "111,222" store identically."""
+    seen = []
+    for part in (raw or "").split(","):
+        value = part.strip()
+        if value and value not in seen:
+            seen.append(value)
+    return ", ".join(seen)
+
+
 def _resolve_categories(firm, category_names):
     firm_categories = {c.name.strip().lower(): c for c in Category.objects.filter(firm=firm)}
     categories = []
@@ -29,12 +41,13 @@ def _resolve_categories(firm, category_names):
     return categories
 
 
-def upsert_client(firm, pan, name, phone, email, aadhar, category_names, edited_by=None):
+def upsert_client(firm, pan, name, phone, email, aadhar, category_names, edited_by=None, account_number=""):
     pan = (pan or "").strip().upper()
     name = (name or "").strip()
     phone = (phone or "").strip()
     email = (email or "").strip()
     aadhar = (aadhar or "").strip()
+    account_number = (account_number or "").strip()
 
     if not pan or not name or not phone or not email:
         raise ClientDataError("PAN, Client Name, Phone, and Email are required.")
@@ -49,6 +62,7 @@ def upsert_client(firm, pan, name, phone, email, aadhar, category_names, edited_
         client.name = name
         client.phone = phone
         client.email = email
+        client.account_number = _normalize_account_numbers(account_number)
         if edited_by:
             client.last_edited_by = edited_by
         try:
@@ -64,7 +78,7 @@ def upsert_client(firm, pan, name, phone, email, aadhar, category_names, edited_
     return client, existing is None
 
 
-def update_client(client, pan, name, phone, email, aadhar, category_names, edited_by=None):
+def update_client(client, pan, name, phone, email, aadhar, category_names, edited_by=None, account_number=""):
     """Edits an already-identified Client (found by pk on the portal's Edit Client screen)
     -- distinct from upsert_client (Section 2's bulk-import/manual-add path, which matches
     by PAN). Here the record is already known, so changing its PAN must rename this row,
@@ -74,6 +88,7 @@ def update_client(client, pan, name, phone, email, aadhar, category_names, edite
     phone = (phone or "").strip()
     email = (email or "").strip()
     aadhar = (aadhar or "").strip()
+    account_number = (account_number or "").strip()
 
     if not pan or not name or not phone or not email:
         raise ClientDataError("PAN, Client Name, Phone, and Email are required.")
@@ -91,6 +106,7 @@ def update_client(client, pan, name, phone, email, aadhar, category_names, edite
         client.name = name
         client.phone = phone
         client.email = email
+        client.account_number = _normalize_account_numbers(account_number)
         if edited_by:
             client.last_edited_by = edited_by
         try:

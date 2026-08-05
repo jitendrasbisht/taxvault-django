@@ -71,7 +71,7 @@ class BatchAdmin(ProfileRequiredMixin, FirmScopedAdminMixin, admin.ModelAdmin):
 class DocumentAdmin(ProfileRequiredMixin, FirmScopedAdminMixin, admin.ModelAdmin):
     list_display = ("original_filename", "client", "doc_code", "status", "ay", "firm", "review_reason", "preview_link")
     list_filter = ("status", "ay")
-    search_fields = ("original_filename", "detected_pan")
+    search_fields = ("original_filename", "detected_pan", "detected_account")
 
     def has_add_permission(self, request):
         return False

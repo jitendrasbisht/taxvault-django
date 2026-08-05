@@ -14,6 +14,19 @@ _AADHAR_TEXT_RE = re.compile(r"\b\d{4}[\s-]?\d{4}[\s-]?\d{4}\b")
 # checks a word/non-word transition and digits are all "word" characters to regex.
 _PHONE_TEXT_RE = re.compile(r"(?<!\d)(?:\+91[-\s]?|0)?([6-9]\d{9})(?!\d)")
 _PAN_TEXT_RE = re.compile(r"\b[A-Z]{5}[0-9]{4}[A-Z]\b")
+# Bank account numbers have no fixed format/checksum (unlike PAN/Aadhar), so a bare
+# 9-18 digit run is far too prone to false positives on a bank statement -- transaction
+# refs, cheque numbers, IFSC-adjacent digits, etc. are all the same shape. Anchoring to a
+# nearby "a/c no" / "account number" label (Section 3's own reasoning for treating Phone as
+# the weakest signal) keeps this from being an even weaker one. "no"/"number" is required
+# (not optional) so an unrelated label like "Account Type" can't anchor a match. The window
+# after the label is generous (up to 300 chars, not just adjacent) because a PDF table's
+# "Account Number" column header commonly gets flattened well ahead of the actual value
+# cell once extracted as plain text -- real statements have shown a 100+ char gap.
+_ACCOUNT_TEXT_RE = re.compile(
+    r"(?:a/?c(?:count)?|acct)\.?\s*(?:no\.?|number)[\s\S]{0,300}?(?<!\d)(\d{9,18})(?!\d)",
+    re.IGNORECASE,
+)
 
 TEXT_EXTENSIONS = {".pdf"}
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png"}
@@ -33,6 +46,7 @@ def looks_like_scanned_pdf(text: str) -> bool:
 # never the other way).
 MATCH_PAN = "pan"
 MATCH_AADHAR = "aadhar"
+MATCH_ACCOUNT = "account"
 MATCH_PHONE = "phone"
 MATCH_NONE = "none"
 
@@ -57,15 +71,20 @@ def detect_identifiers(text: str) -> dict:
             aadhar_digits_list.append(digits)
 
     phones = list(dict.fromkeys(m for m in _PHONE_TEXT_RE.findall(text)))
+    accounts = list(dict.fromkeys(_ACCOUNT_TEXT_RE.findall(text)))
 
-    return {"pans": pans, "aadhar_digits_list": aadhar_digits_list, "phones": phones}
+    return {
+        "pans": pans, "aadhar_digits_list": aadhar_digits_list,
+        "accounts": accounts, "phones": phones,
+    }
 
 
 def match_client(firm, identifiers: dict):
-    """Priority: PAN, then Aadhar, then Phone (Section 3). Every exact candidate of the
-    higher-priority type is checked before falling back to the next type. Still no name
-    matching, no fuzzy matching — an unresolved identifier means Review Queue, never a
-    guess. Returns (client_or_None, match_method, matched_value_or_None)."""
+    """Priority: PAN, then Aadhar, then Account Number, then Phone (Section 3, extended by
+    the Section 19 addendum). Every exact candidate of the higher-priority type is checked
+    before falling back to the next type. Still no name matching, no fuzzy matching — an
+    unresolved identifier means Review Queue, never a guess. Returns (client_or_None,
+    match_method, matched_value_or_None)."""
     for pan in identifiers.get("pans", []):
         if PAN_REGEX.match(pan):
             client = Client.objects.filter(firm=firm, pan=pan).first()
@@ -76,6 +95,16 @@ def match_client(firm, identifiers: dict):
         client = Client.objects.filter(firm=firm, aadhar_hash=hash_aadhar_digits(digits)).first()
         if client:
             return client, MATCH_AADHAR, digits
+
+    if identifiers.get("accounts"):
+        # account_number can hold a comma-separated list (a client may have more than one
+        # bank account) -- exact-match the field itself, then confirm precisely against the
+        # parsed list, so "1234" can't accidentally match inside a longer stored number.
+        candidates = Client.objects.filter(firm=firm).exclude(account_number="").exclude(account_number__isnull=True)
+        for account in identifiers["accounts"]:
+            client = next((c for c in candidates if account in c.account_number_list()), None)
+            if client:
+                return client, MATCH_ACCOUNT, account
 
     for phone in identifiers.get("phones", []):
         client = Client.objects.filter(firm=firm, phone__endswith=phone[-10:]).first()

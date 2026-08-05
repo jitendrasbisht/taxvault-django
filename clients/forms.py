@@ -31,6 +31,11 @@ class ManualClientAddForm(forms.Form):
         help_text="Never stored in plaintext — only a masked value and a hash are kept.",
         widget=forms.TextInput(attrs={"class": _INPUT_CSS}),
     )
+    account_number = forms.CharField(
+        max_length=255, required=False, label="Bank Account Number(s) (optional)",
+        help_text="Used to match incoming statements/certificates. Separate multiple accounts with a comma.",
+        widget=forms.TextInput(attrs={"class": _INPUT_CSS}),
+    )
     categories = forms.ModelMultipleChoiceField(
         queryset=Category.objects.none(), widget=forms.CheckboxSelectMultiple,
     )

@@ -29,7 +29,7 @@ Primary users: CA (Firm Admin), Office Staff.
 ## 2. Client Onboarding
 
 - **Bulk import** (Excel/CSV) — primary onboarding method for existing client base (e.g. 500 clients).
-  - Required fields per client: PAN, Client Name, Phone, Aadhar (optional), Category tags (see Section 5).
+  - Required fields per client: PAN, Client Name, Phone, Aadhar (optional), Category tags (see Section 5). ~~Superseded — see Section 19: Account Number (optional) added.~~
 - **Manual individual add** — for new clients going forward, same fields.
 - Both paths write to the same Client Master table — no separate logic paths downstream.
 - **No automatic client creation from incoming documents, ever.** If a document doesn't match an existing client, it goes to the Review Queue (Section 6). A human must explicitly create the client record.
@@ -42,8 +42,9 @@ Priority order for matching an incoming document to a client:
 
 1. **PAN number** (regex: 5 letters, 4 digits, 1 letter — `[A-Z]{5}[0-9]{4}[A-Z]{1}`)
 2. **Aadhar number** (12 digits) — store masked/hashed, not full plaintext, due to regulatory sensitivity.
-3. **Phone number** — weakest signal, used only as fallback.
-4. **Name matching is NOT used** — explicitly excluded due to false-positive risk.
+3. **Account number** — see Section 19 addendum (approved 2026-08-05).
+4. **Phone number** — weakest signal, used only as fallback.
+5. **Name matching is NOT used** — explicitly excluded due to false-positive risk.
 
 If no identifier is found, or no match exists in Client Master → route to Review Queue. Do not guess or fuzzy-match.
 
@@ -276,6 +277,17 @@ Approved explicitly by the CA on 2026-08-02, after an extended visual mockup/bra
 - **What's on the Dashboard:** KPI tiles (total clients, Ready/In Progress/Not Started, docs filed this week with a sparkline, review queue size), a status-split donut, a filing-deadline countdown, a reminder-stage funnel (sent → still-missing → now-Ready — **no open/click tracking**, that exclusion in Section 11 still applies), a client × doc-code completion heatmap for the least-complete clients, a firm-wide "which doc code blocks the most clients" bar chart, client mix by category, a recent-activity feed (documents filed, reminders sent, clients added — bounded to the last handful of events, not a queryable log), and reminders-sent-by-staff.
 - **Reminders-sent-by-staff required one small schema addition:** `ReminderLog.sent_by` (who triggered the send). This is the same "light touch, not audit trail" pattern already approved for `Client.last_edited_by` — a single latest-value field, not a history log — so it does not reopen Section 14/16's "no audit trail" exclusion.
 - **Recent-activity feed is not an audit trail:** it's a short, bounded, computed-on-the-fly list for the Dashboard, not a stored/queryable/filterable log of actions.
+
+---
+
+## 19. Addendum — Account Number as a 4th matching identifier (approved deviation from the MVP1 lock)
+
+Approved explicitly by the CA on 2026-08-05, after being asked to confirm the scope directly, overriding Section 3's locked 3-identifier priority order and Section 2's locked required-fields list. Everything else in this document remains locked as written.
+
+- **`Client.account_number`** (optional, plaintext, same treatment as Phone — not hashed/masked like Aadhar, since there's no government-ID-specific regulatory mandate for it) added to the Client Master. Available on bulk import (`Account Number` column, optional), manual add, and edit. **Comma-separated when a client has more than one bank account** (each produces its own statement/interest certificate) — a document matches if the detected account number is any one of them.
+- **Matching priority is now PAN → Aadhar → Account Number → Phone.** Account Number sits above Phone because it's a more unique identifier once found — but *finding* it reliably is harder than Phone, since bank account numbers have no fixed format or checksum (unlike PAN/Aadhar). To avoid false-positive matches against transaction references, cheque numbers, or other long digit runs on a bank statement, detection is anchored to a nearby label (`a/c`, `account no`, `acct`, etc.) rather than any bare 9–18 digit sequence — the same false-positive concern Section 3 already raised about Phone.
+- `Document.detected_account` mirrors `detected_pan` / `detected_aadhar_masked` / `detected_phone` — shown in the Review Queue resolve screen for the same "what did we actually find" transparency.
+- No change to Section 3's "no name matching, no fuzzy matching" rule, and no auto-suggestion/confidence scoring — an account number that doesn't match an existing client still routes to Review Queue like any other unmatched identifier.
 
 ---
 

@@ -188,9 +188,9 @@ class CategoryAdmin(FirmAdminOnlyMixin, FirmScopedAdminMixin, admin.ModelAdmin):
 
 @admin.register(Client)
 class ClientAdmin(ProfileRequiredMixin, FirmScopedAdminMixin, admin.ModelAdmin):
-    list_display = ("pan", "name", "phone", "email", "firm", "aadhar_masked", "itr_status_display", "download_all_link")
+    list_display = ("pan", "name", "phone", "email", "account_number", "firm", "aadhar_masked", "itr_status_display", "download_all_link")
     list_filter = (FirmScopedCategoryFilter, ITRStatusFilter)
-    search_fields = ("pan", "name", "phone")
+    search_fields = ("pan", "name", "phone", "account_number")
     actions = ["send_initial_request_action", "send_followup_action"]
 
     @admin.display(description="ITR Status")

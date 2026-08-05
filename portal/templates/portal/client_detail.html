@@ -29,7 +29,7 @@
           <img src="{% static 'portal/img/ready_confetti.gif' %}" alt="" class="h-9 w-9" width="36" height="36">
           {% endif %}
         </div>
-        <p class="mt-1 font-mono text-xs text-slate-500">{{ client.pan }} &middot; {{ client.phone }} &middot; {{ client.email }}</p>
+        <p class="mt-1 font-mono text-xs text-slate-500">{{ client.pan }} &middot; {{ client.phone }} &middot; {{ client.email }}{% if client.account_number %} &middot; A/c {{ client.account_number }}{% endif %}</p>
         {% if client.last_edited_by %}
         <p class="mt-1 text-xs text-slate-400">Last edited by {{ client.last_edited_by.username }} on {{ client.updated_at|date:"M j, Y H:i" }}</p>
         {% endif %}
