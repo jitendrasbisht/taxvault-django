@@ -62,7 +62,11 @@
       "Bash(cloudflared --version)",
       "Bash(\"/c/Program Files \\(x86\\)/cloudflared/cloudflared.exe\" --version)",
       "Read(//c/Program Files \\\\\\(x86\\\\\\)/**)",
-      "Bash(./venv/Scripts/python.exe manage.py create_firm \"Khatri & Co\")"
+      "Bash(./venv/Scripts/python.exe manage.py create_firm \"Khatri & Co\")",
+      "Bash(tasklist //FI \"IMAGENAME eq Docker Desktop.exe\")",
+      "Bash(tasklist //FI \"IMAGENAME eq cloudflared.exe\")",
+      "Bash(powershell.exe -Command \"Start-Process 'C:\\\\Program Files\\\\Docker\\\\Docker\\\\Docker Desktop.exe'\")",
+      "Bash(git rm *)"
     ]
   }
 }
