@@ -66,7 +66,9 @@
       "Bash(tasklist //FI \"IMAGENAME eq Docker Desktop.exe\")",
       "Bash(tasklist //FI \"IMAGENAME eq cloudflared.exe\")",
       "Bash(powershell.exe -Command \"Start-Process 'C:\\\\Program Files\\\\Docker\\\\Docker\\\\Docker Desktop.exe'\")",
-      "Bash(git rm *)"
+      "Bash(git rm *)",
+      "PowerShell(Get-CimInstance Win32_Process -Filter \"Name = 'python.exe'\")",
+      "PowerShell(foreach \\($p in 23736,27428,18704,21212,10616,22172,37508\\) { try { Stop-Process -Id $p -Force -ErrorAction Stop; Write-Output \"killed $p\" } catch { Write-Output \"$p already gone\" } })"
     ]
   }
 }
