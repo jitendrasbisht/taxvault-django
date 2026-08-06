@@ -31,44 +31,86 @@
     </div>
 
     {% if recent_batches %}
-    <div class="mt-6 rounded-xl border border-slate-200 bg-white">
-      <div class="flex items-center justify-between border-b border-slate-100 px-5 py-3">
-        <h2 class="text-sm font-semibold text-slate-800">Recent Batches</h2>
-        {% if profile.role == 'firm_admin' %}
-        <a href="{% url 'portal:clear_all_batches' %}" class="flex items-center gap-1 text-xs font-medium text-rose-600 hover:underline">
-          <i data-lucide="trash-2" class="h-3 w-3"></i> Clear All
-        </a>
-        {% endif %}
+    <form method="post" action="{% url 'portal:delete_batches' %}" id="delete-batches-form"
+          onsubmit="return confirm('Delete the selected batch(es)? You will confirm details on the next screen.');">
+      {% csrf_token %}
+      <div class="mt-6 rounded-xl border border-slate-200 bg-white">
+        <div class="flex items-center justify-between border-b border-slate-100 px-5 py-3">
+          <h2 class="text-sm font-semibold text-slate-800">Recent Batches</h2>
+          {% if profile.role == 'firm_admin' %}
+          <div class="flex items-center gap-3">
+            <button type="submit" id="delete-batches-btn" disabled
+                    class="flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-medium text-rose-700 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-40">
+              <i data-lucide="trash-2" class="h-3 w-3"></i> Delete Selected (<span id="selected-batch-count">0</span>)
+            </button>
+            <a href="{% url 'portal:clear_all_batches' %}" class="flex items-center gap-1 text-xs font-medium text-rose-600 hover:underline">
+              <i data-lucide="trash-2" class="h-3 w-3"></i> Clear All
+            </a>
+          </div>
+          {% endif %}
+        </div>
+        <table class="w-full text-xs">
+          <thead>
+            <tr class="border-b border-slate-100 text-left uppercase tracking-wide text-slate-400">
+              {% if profile.role == 'firm_admin' %}
+              <th class="w-8 px-5 py-2"><input type="checkbox" id="select-all-batch-cb"></th>
+              {% endif %}
+              <th class="px-3 py-2 font-medium">Batch</th>
+              <th class="px-3 py-2 font-medium">AY</th>
+              <th class="px-3 py-2 font-medium">Found</th>
+              <th class="px-3 py-2 font-medium">Filed</th>
+              <th class="px-3 py-2 font-medium">Review</th>
+              <th class="px-3 py-2 font-medium">Skipped</th>
+              <th class="px-3 py-2 font-medium">Started</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for batch in recent_batches %}
+            <tr onclick="window.location='{% url 'portal:batch_detail' batch.pk %}'" class="cursor-pointer border-b border-slate-50 last:border-0 hover:bg-slate-50">
+              {% if profile.role == 'firm_admin' %}
+              <td class="px-5 py-2.5" onclick="event.stopPropagation()"><input type="checkbox" name="batch_ids" value="{{ batch.pk }}" class="batch-cb"></td>
+              {% endif %}
+              <td class="px-3 py-2.5 font-medium text-slate-700">#{{ batch.pk }}</td>
+              <td class="px-3 py-2.5 text-slate-500">{{ batch.ay }}</td>
+              <td class="px-3 py-2.5 text-slate-500">{{ batch.files_found }}</td>
+              <td class="px-3 py-2.5 text-emerald-600">{{ batch.files_filed }}</td>
+              <td class="px-3 py-2.5 text-rose-500">{{ batch.files_review }}</td>
+              <td class="px-3 py-2.5 text-slate-400">{{ batch.files_skipped }}</td>
+              <td class="px-3 py-2.5 text-slate-400">{{ batch.created_at|date:"M j, H:i" }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
-      <table class="w-full text-xs">
-        <thead>
-          <tr class="border-b border-slate-100 text-left uppercase tracking-wide text-slate-400">
-            <th class="px-5 py-2 font-medium">Batch</th>
-            <th class="px-3 py-2 font-medium">AY</th>
-            <th class="px-3 py-2 font-medium">Found</th>
-            <th class="px-3 py-2 font-medium">Filed</th>
-            <th class="px-3 py-2 font-medium">Review</th>
-            <th class="px-3 py-2 font-medium">Skipped</th>
-            <th class="px-3 py-2 font-medium">Started</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for batch in recent_batches %}
-          <tr onclick="window.location='{% url 'portal:batch_detail' batch.pk %}'" class="cursor-pointer border-b border-slate-50 last:border-0 hover:bg-slate-50">
-            <td class="px-5 py-2.5 font-medium text-slate-700">#{{ batch.pk }}</td>
-            <td class="px-3 py-2.5 text-slate-500">{{ batch.ay }}</td>
-            <td class="px-3 py-2.5 text-slate-500">{{ batch.files_found }}</td>
-            <td class="px-3 py-2.5 text-emerald-600">{{ batch.files_filed }}</td>
-            <td class="px-3 py-2.5 text-rose-500">{{ batch.files_review }}</td>
-            <td class="px-3 py-2.5 text-slate-400">{{ batch.files_skipped }}</td>
-            <td class="px-3 py-2.5 text-slate-400">{{ batch.created_at|date:"M j, H:i" }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
+    </form>
     {% endif %}
   </div>
   <div class="h-8"></div>
 </div>
+<script>
+(function () {
+  var selectAll = document.getElementById('select-all-batch-cb');
+  var deleteBtn = document.getElementById('delete-batches-btn');
+  var countEl = document.getElementById('selected-batch-count');
+  var checkboxes = Array.prototype.slice.call(document.querySelectorAll('.batch-cb'));
+  if (!deleteBtn) return;
+
+  function refresh() {
+    var checked = checkboxes.filter(function (cb) { return cb.checked; }).length;
+    countEl.textContent = checked;
+    deleteBtn.disabled = checked === 0;
+  }
+
+  if (selectAll) {
+    selectAll.addEventListener('change', function () {
+      checkboxes.forEach(function (cb) { cb.checked = selectAll.checked; });
+      refresh();
+    });
+  }
+  checkboxes.forEach(function (cb) {
+    cb.addEventListener('click', function (e) { e.stopPropagation(); });
+    cb.addEventListener('change', refresh);
+  });
+})();
+</script>
 {% endblock %}

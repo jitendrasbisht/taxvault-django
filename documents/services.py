@@ -7,7 +7,7 @@ from django.utils import timezone
 from taxvault.vault_naming import vault_filename, vault_folder_path
 
 from .models import Document
-from .storage import copy_from_review_pending_to_vault, move_within_vault
+from .storage import absolute_path, copy_from_review_pending_to_vault, move_within_vault
 
 
 class ReviewResolutionError(Exception):
@@ -45,3 +45,17 @@ def resolve_review_document(document, client, doc_code):
     document.filed_at = timezone.now()
     document.save()
     return document
+
+
+def delete_review_document(document):
+    """The other resolution for a Review Queue item: it was never a document this firm
+    needed at all (wrong client's mail forwarded in, a stray attachment, etc.) -- discard it
+    outright rather than forcing a client/DocCode assignment onto something that doesn't
+    belong. Removes the file(s) on disk (Review_Pending, or Vault+Processed_Archive if it
+    had already been auto-filed as MISC) along with the row."""
+    for p in (document.storage_path, document.archive_path):
+        if p:
+            fp = absolute_path(p)
+            if fp.exists():
+                fp.unlink()
+    document.delete()

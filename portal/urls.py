@@ -20,6 +20,7 @@ urlpatterns = [
     path("intake/", views.intake, name="intake"),
     path("intake/batch/<int:pk>/", views.batch_detail, name="batch_detail"),
     path("intake/clear-all/", views.clear_all_batches_view, name="clear_all_batches"),
+    path("intake/delete/", views.delete_batches_view, name="delete_batches"),
     path("reminders/", views.reminders_view, name="reminders"),
     path("settings/", views.settings_view, name="settings"),
     path("settings/clear-all-clients/", views.clear_all_clients_view, name="clear_all_clients"),

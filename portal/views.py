@@ -20,7 +20,7 @@ from clients.reminders import send_followup, send_initial_request
 from clients.services import ClientDataError, update_client, upsert_client
 from documents.models import Batch, Document
 from documents.storage import absolute_path
-from documents.services import ReviewResolutionError, resolve_review_document
+from documents.services import ReviewResolutionError, delete_review_document, resolve_review_document
 from documents.status import compute_itr_status
 from taxvault.ay import current_assessment_year, next_filing_deadline
 from taxvault.vault_naming import vault_folder_path
@@ -464,6 +464,12 @@ def review_resolve(request, profile, pk):
     clients = Client.objects.filter(firm=profile.firm).order_by("name")
     doc_codes = DocCode.objects.filter(firm=profile.firm).order_by("code")
 
+    if request.method == "POST" and request.POST.get("action") == "delete":
+        filename = document.original_filename
+        delete_review_document(document)
+        messages.success(request, f"Deleted '{filename}' from the Review Queue.")
+        return redirect("portal:review_queue")
+
     if request.method == "POST":
         client_id = document.client_id or request.POST.get("client")
         doc_code_id = request.POST.get("doc_code")
@@ -596,45 +602,54 @@ def _reset_serial_sequence(model):
             cursor.execute(f"ALTER SEQUENCE {seq_name} RESTART WITH 1")
 
 
+def _delete_batches(batches_qs):
+    """Shared file+DB cleanup for both the firm-wide 'Clear All' reset and a targeted
+    delete of specific batches (picked via checkboxes) -- deletes every Document row+file
+    under the given batches, then the batches themselves, then sweeps their on-disk folders
+    directly. That last sweep is belt-and-suspenders: a Document row can go missing (a
+    crashed run, a doc deleted some other way) while its file is still sitting in
+    Processed_Archive/Review_Pending, which previously required a manual rm -rf to fully
+    reset a firm's test data between runs. Batch/Document ids are a single global sequence
+    shared by every firm (Section 13), so numbering only restarts at #1 when doing so is
+    globally safe (no other firm has any rows left in these tables)."""
+    batch_ids = list(batches_qs.values_list("id", flat=True))
+    docs = Document.objects.filter(batch_id__in=batch_ids)
+    batch_count, doc_count = len(batch_ids), docs.count()
+
+    with transaction.atomic():
+        for doc in docs:
+            for p in (doc.storage_path, doc.archive_path):
+                if p:
+                    fp = absolute_path(p)
+                    if fp.exists():
+                        fp.unlink()
+        docs.delete()
+        Batch.objects.filter(pk__in=batch_ids).delete()
+
+        sequence_reset = False
+        if not Batch.objects.exists() and not Document.objects.exists():
+            _reset_serial_sequence(Batch)
+            _reset_serial_sequence(Document)
+            sequence_reset = True
+
+    for batch_id in batch_ids:
+        for folder in ("Processed_Archive", "Review_Pending"):
+            shutil.rmtree(Path(settings.VAULT_ROOT) / folder / f"batch_{batch_id}", ignore_errors=True)
+
+    return batch_count, doc_count, sequence_reset
+
+
 @firm_admin_required
 def clear_all_batches_view(request, profile):
     """Self-service reset for Document Intake history — deletes every Batch (and its
-    Documents/files) for this firm. Batch/Document ids are a single global sequence shared
-    by every firm, not one per firm, so numbering only restarts at #1 when doing so is
-    globally safe (no other firm has any rows left in these tables)."""
+    Documents/files) for this firm. See delete_batches_view for the targeted, pick-which-
+    batch(es) alternative."""
     firm = profile.firm
     batch_count = Batch.objects.filter(firm=firm).count()
     doc_count = Document.objects.filter(firm=firm).count()
 
     if request.method == "POST" and request.POST.get("confirm") == "yes":
-        batch_ids = list(Batch.objects.filter(firm=firm).values_list("id", flat=True))
-
-        with transaction.atomic():
-            docs = Document.objects.filter(firm=firm)
-            for doc in docs:
-                for p in (doc.storage_path, doc.archive_path):
-                    if p:
-                        fp = absolute_path(p)
-                        if fp.exists():
-                            fp.unlink()
-            docs.delete()
-            Batch.objects.filter(firm=firm).delete()
-
-            sequence_reset = False
-            if not Batch.objects.exists() and not Document.objects.exists():
-                _reset_serial_sequence(Batch)
-                _reset_serial_sequence(Document)
-                sequence_reset = True
-
-        # Belt-and-suspenders: also sweep each cleared batch's on-disk folders directly,
-        # rather than relying only on per-Document unlinking above. A Document row can go
-        # missing (a crashed run, a doc that was manually deleted) while its file is still
-        # sitting in Processed_Archive/Review_Pending -- this is what previously required
-        # a manual rm -rf to fully reset a firm's test data between runs.
-        for batch_id in batch_ids:
-            for folder in ("Processed_Archive", "Review_Pending"):
-                shutil.rmtree(Path(settings.VAULT_ROOT) / folder / f"batch_{batch_id}", ignore_errors=True)
-
+        batch_count, doc_count, sequence_reset = _delete_batches(Batch.objects.filter(firm=firm))
         msg = f"Cleared {batch_count} batch(es) and {doc_count} document(s)."
         msg += " Batch numbering restarted from #1." if sequence_reset else (
             " Numbering wasn't restarted — another firm still has batch/document records "
@@ -650,6 +665,36 @@ def clear_all_batches_view(request, profile):
         "doc_count": doc_count,
     }
     return render(request, "portal/clear_all_batches.html", context)
+
+
+@firm_admin_required
+def delete_batches_view(request, profile):
+    """Targeted delete (one or several, picked via checkboxes on Document Intake) —
+    separate from the firm-wide 'Clear All' reset above. Firm Admin only, same permission
+    level as Clear All, since either way this permanently destroys filed documents, not
+    just intake history."""
+    firm = profile.firm
+    batch_ids = request.POST.getlist("batch_ids")
+    if not batch_ids:
+        messages.error(request, "No batches selected.")
+        return redirect("portal:intake")
+
+    batches = Batch.objects.filter(firm=firm, pk__in=batch_ids)
+
+    if request.POST.get("confirm") == "yes":
+        batch_count, doc_count, sequence_reset = _delete_batches(batches)
+        msg = f"Deleted {batch_count} batch(es) and {doc_count} document(s)."
+        msg += " Batch numbering restarted from #1." if sequence_reset else ""
+        messages.success(request, msg)
+        return redirect("portal:intake")
+
+    context = {
+        "active_nav": "intake",
+        "profile": profile,
+        "batches": batches.annotate(doc_count=Count("documents")),
+        "batch_ids": batch_ids,
+    }
+    return render(request, "portal/delete_batches_confirm.html", context)
 
 
 @firm_admin_required
