@@ -313,7 +313,27 @@
       "Bash(python build_bot_poc.py)",
       "PowerShell(& \"$env:LOCALAPPDATA\\\\Android\\\\Sdk\\\\platform-tools\\\\adb.exe\" devices -l)",
       "PowerShell(& \"$env:LOCALAPPDATA\\\\Android\\\\Sdk\\\\platform-tools\\\\adb.exe\" -s 10BE1K2F5L000PP shell am start -n com.ludonexus/com.ludonexus.MainActivity 2>&1)",
-      "PowerShell(& \"$env:LOCALAPPDATA\\\\Android\\\\Sdk\\\\platform-tools\\\\adb.exe\" -s 10BE1K2F5L000PP shell dumpsys window | Select-String \"mCurrentFocus\")"
+      "PowerShell(& \"$env:LOCALAPPDATA\\\\Android\\\\Sdk\\\\platform-tools\\\\adb.exe\" -s 10BE1K2F5L000PP shell dumpsys window | Select-String \"mCurrentFocus\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" https://munich-objective-anime-davidson.trycloudflare.com/login/)",
+      "Bash(curl -s -o /dev/null -w \"local:%{http_code}\\\\n\" http://localhost:8000/login/)",
+      "Bash(curl -s -o /dev/null -w \"LAN IP reachable: %{http_code}\\\\n\" http://192.168.1.33:8000/login/)",
+      "Bash(docker exec *)",
+      "Bash(curl -s -o /dev/null -w \"local django: %{http_code}\\\\n\" --connect-timeout 5 http://localhost:8000/login/)",
+      "PowerShell(Stop-Process -Id 22956 -Force -ErrorAction SilentlyContinue)",
+      "Bash(rm -f cloudflared_err.log)",
+      "Bash(nohup cloudflared tunnel --url http://localhost:8000)",
+      "Bash(disown)",
+      "Bash(MSYS_NO_PATHCONV=1 \"/c/Users/Jeet/AppData/Local/Android/Sdk/platform-tools/adb.exe\" -s 10BE1K2F5L000PP shell screencap -p /sdcard/ludo_board.png)",
+      "Bash(\"/c/Users/Jeet/AppData/Local/Android/Sdk/platform-tools/adb.exe\" -s 10BE1K2F5L000PP pull /sdcard/ludo_board.png \"C:/Users/Jeet/AppData/Local/Temp/claude/C--Users-Jeet-Desktop-projects-TaxVault/929d35c5-bf52-4b8e-b7a7-51665e7fc54b/scratchpad/ludo_board.png\")",
+      "Bash(curl -s -o /dev/null -w \"local: %{http_code}\\\\n\" --connect-timeout 5 http://localhost:8000/login/)",
+      "Bash(curl -s -o /dev/null -w \"tunnel: %{http_code}\\\\n\" --connect-timeout 5 https://brisbane-utilization-sporting-properly.trycloudflare.com/login/)",
+      "PowerShell(Stop-Process -Id 32528 -Force -ErrorAction SilentlyContinue)",
+      "Bash(curl -s -o /dev/null -w \"tunnel: %{http_code}\\\\n\" --connect-timeout 5 https://spears-comm-lat-copyrights.trycloudflare.com/login/)",
+      "PowerShell(Get-Command gh -ErrorAction SilentlyContinue)",
+      "PowerShell(gh --version 2>&1)",
+      "Read(//c/Users/Jeet/**)",
+      "Bash(git fetch *)",
+      "Bash(git ls-tree *)"
     ]
   }
 }
