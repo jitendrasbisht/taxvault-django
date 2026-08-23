@@ -1,9 +1,14 @@
-"""Text extraction (Section 4) and identity matching (Section 3). Text-based PDFs only for
-now — OCR for scanned/image files is deferred until Google Cloud Vision credentials are
-available; those files are routed to Review Queue instead of guessed at."""
+"""Text extraction (Section 4) and identity matching (Section 3). Text-based PDFs and
+spreadsheets (Section 4 addendum: bank/MF statements increasingly arrive as Excel/CSV
+exports, not PDFs) for now — OCR for scanned/image files is deferred until Google Cloud
+Vision credentials are available; those files are routed to Review Queue instead of
+guessed at."""
 
+import csv
 import re
+from pathlib import Path
 
+import openpyxl
 from pypdf import PdfReader
 
 from clients.models import AADHAR_DIGITS_REGEX, PAN_REGEX, Client, hash_aadhar_digits
@@ -28,7 +33,12 @@ _ACCOUNT_TEXT_RE = re.compile(
     re.IGNORECASE,
 )
 
-TEXT_EXTENSIONS = {".pdf"}
+PDF_EXTENSIONS = {".pdf"}
+# Legacy .xls (pre-2007 binary format) is deliberately not included -- reading it would
+# need a new dependency (xlrd) beyond openpyxl, which the rest of the app already uses for
+# client bulk-import. Real-world bank/broker exports are overwhelmingly .xlsx or .csv today.
+SPREADSHEET_EXTENSIONS = {".xlsx", ".csv"}
+TEXT_EXTENSIONS = PDF_EXTENSIONS | SPREADSHEET_EXTENSIONS
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png"}
 SUPPORTED_EXTENSIONS = TEXT_EXTENSIONS | IMAGE_EXTENSIONS
 
@@ -54,6 +64,40 @@ MATCH_NONE = "none"
 def extract_text_from_pdf(path) -> str:
     reader = PdfReader(str(path))
     return "\n".join(page.extract_text() or "" for page in reader.pages)
+
+
+def extract_text_from_spreadsheet(path) -> str:
+    """Flattens every cell (all sheets, for .xlsx) into one text blob, so the exact same
+    keyword/identifier detection built for PDFs (detect_identifiers, classify) works
+    unchanged and extension-agnostic -- an account number or a doc-code keyword reads the
+    same whether it came from a PDF paragraph or a spreadsheet cell."""
+    suffix = Path(path).suffix.lower()
+    lines = []
+    if suffix == ".csv":
+        with open(path, newline="", encoding="utf-8-sig", errors="ignore") as f:
+            for row in csv.reader(f):
+                lines.append(" ".join(str(cell) for cell in row if cell))
+    else:
+        # openpyxl's read-only mode keeps the file handle open (streams rows lazily) until
+        # explicitly closed -- on Windows that leaves it locked, so the pipeline's later
+        # shutil.move() into the vault fails with a "file in use" error unless this is
+        # closed the moment reading is done, not left for garbage collection.
+        wb = openpyxl.load_workbook(str(path), read_only=True, data_only=True)
+        try:
+            for ws in wb.worksheets:
+                for row in ws.iter_rows(values_only=True):
+                    lines.append(" ".join(str(cell) for cell in row if cell is not None))
+        finally:
+            wb.close()
+    return "\n".join(lines)
+
+
+def extract_text(path) -> str:
+    """Single entry point the pipeline calls regardless of file type -- dispatches to the
+    right extractor by extension. Keeps pipeline.py from needing to know the difference."""
+    if Path(path).suffix.lower() in SPREADSHEET_EXTENSIONS:
+        return extract_text_from_spreadsheet(path)
+    return extract_text_from_pdf(path)
 
 
 def detect_identifiers(text: str) -> dict:

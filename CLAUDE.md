@@ -52,8 +52,8 @@ If no identifier is found, or no match exists in Client Master → route to Revi
 
 ## 4. Document Intake (MVP1 = Folder-Based Only)
 
-- Input: a **watched local folder** (e.g., Downloads) containing up to 600–700 mixed files per batch.
-- **Text-based PDFs**: extract text directly (no OCR needed) — cheaper, faster.
+- Input: a **watched local folder** (e.g., Downloads) containing up to 600–700 mixed files per batch. ~~Superseded — see Section 20: a browser-upload input was added alongside the folder path, for staff/admin without server filesystem access.~~
+- **Text-based PDFs**: extract text directly (no OCR needed) — cheaper, faster. ~~Superseded — see Section 20: Excel (.xlsx) and CSV documents are also accepted now.~~
 - **Scanned/image files (JPG, PNG, scanned PDF)**: send to OCR (Google Cloud Vision API) for text extraction.
 - Skip/flag non-document file types (.exe, .zip, etc.) — do not attempt to process them.
 - **Email inbound intake and WhatsApp intake are NOT in this build. Do not build any email server, inbox parser, or messaging API integration.** (Deferred to a later phase — out of scope here.)
@@ -288,6 +288,18 @@ Approved explicitly by the CA on 2026-08-05, after being asked to confirm the sc
 - **Matching priority is now PAN → Aadhar → Account Number → Phone.** Account Number sits above Phone because it's a more unique identifier once found — but *finding* it reliably is harder than Phone, since bank account numbers have no fixed format or checksum (unlike PAN/Aadhar). To avoid false-positive matches against transaction references, cheque numbers, or other long digit runs on a bank statement, detection is anchored to a nearby label (`a/c`, `account no`, `acct`, etc.) rather than any bare 9–18 digit sequence — the same false-positive concern Section 3 already raised about Phone.
 - `Document.detected_account` mirrors `detected_pan` / `detected_aadhar_masked` / `detected_phone` — shown in the Review Queue resolve screen for the same "what did we actually find" transparency.
 - No change to Section 3's "no name matching, no fuzzy matching" rule, and no auto-suggestion/confidence scoring — an account number that doesn't match an existing client still routes to Review Queue like any other unmatched identifier.
+
+---
+
+## 20. Addendum — Browser upload as a 2nd intake input, plus Excel/CSV documents (approved deviation from the MVP1 lock)
+
+Approved explicitly by the CA on 2026-08-23, in response to a real access problem: a remote tester (a separate firm, "Khatri & Co", set up per Section 13 isolation for exactly this kind of access) has no filesystem access to the machine running TaxVault, so Section 4's "watched local folder" input had no way to work for her at all. Everything else in Section 4 remains locked as written — this does not reopen "no client-facing upload portal": actual clients (the CA's own clients) still never log in or interact with any UI; this only gives **staff/admin** a second way to get files onto the server besides typing a folder path.
+
+- **Document Intake now has two input methods side by side:** the original folder-path field (unchanged — still requires a path that exists on the server), and a new "Upload Files" file picker that stages the browser's files into `VAULT_ROOT/Uploads/batch_<id>/` and then runs through the exact same `process_batch()` pipeline. No change to matching, classification, or filing logic — only how files arrive on disk.
+- The upload staging folder is cleaned up automatically once its batch finishes processing (or swept by "Clear All"/targeted batch delete if a crash prevented that) — it belongs to the app, unlike a folder-path batch's source folder, which stays untouched since it's the staff member's own folder.
+- **Document types now include Excel (`.xlsx`) and CSV, alongside PDF/JPG/PNG** — bank and mutual fund statements increasingly arrive as spreadsheet exports rather than PDFs. Every cell is flattened into one text blob so the same keyword/identifier detection built for PDFs works unchanged. Legacy `.xls` (pre-2007 binary format) is deliberately not supported — it would need a new dependency (`xlrd`) beyond `openpyxl`, which the app already uses elsewhere.
+- **Targeted batch delete (picked via checkboxes) is open to Staff, not just Firm Admin** — matches the existing Clients precedent (targeted delete is Staff-accessible; only the firm-wide "Clear All" reset stays Admin-only). This was a real inconsistency the app had before this addendum, not a deliberate lock.
+- Review Queue also gained a Delete action (discard a document outright, e.g. wrong firm's file, corrupted upload) alongside the existing "assign a client/DocCode" resolution — Section 10's manual-list-and-action model is unchanged, this is just a second action on it.
 
 ---
 

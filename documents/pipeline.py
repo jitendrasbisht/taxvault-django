@@ -10,9 +10,10 @@ from taxvault.vault_naming import vault_filename, vault_folder_path
 from .classification import classify, compute_content_hash, find_exact_duplicate, find_possible_duplicate
 from .extraction import (
     IMAGE_EXTENSIONS,
+    PDF_EXTENSIONS,
     SUPPORTED_EXTENSIONS,
     detect_identifiers,
-    extract_text_from_pdf,
+    extract_text,
     looks_like_scanned_pdf,
     match_client,
 )
@@ -73,7 +74,25 @@ def process_batch(batch):
             batch.files_review += 1
             continue
 
-        text = extract_text_from_pdf(src_path)
+        try:
+            text = extract_text(src_path)
+        except Exception:
+            # A malformed/corrupted/incomplete file (more likely now that files can arrive
+            # via browser upload, not just a locally-verified folder) shouldn't take down
+            # the rest of the batch -- one unreadable file is exactly what Review Queue is
+            # for, same as the "OCR not available" case just above.
+            review_path = move_to_review_pending(src_path, batch.id, original_filename)
+            Document.objects.create(
+                batch=batch, firm=firm, ay=batch.ay,
+                original_filename=original_filename, content_hash=content_hash,
+                extraction_method=Document.EXTRACTION_NONE,
+                status=Document.STATUS_REVIEW,
+                review_reason="Could not read this file — it may be corrupted or not a valid file of its type.",
+                storage_path=review_path,
+            )
+            batch.files_review += 1
+            continue
+
         identifiers = detect_identifiers(text)
         client, match_method, matched_value = match_client(firm, identifiers)
 
@@ -89,8 +108,10 @@ def process_batch(batch):
 
         if client is None:
             review_path = move_to_review_pending(src_path, batch.id, original_filename)
-            if looks_like_scanned_pdf(text):
+            if looks_like_scanned_pdf(text) and ext in PDF_EXTENSIONS:
                 reason = "This looks like a scanned PDF with no readable text — OCR not available yet."
+            elif looks_like_scanned_pdf(text):
+                reason = "This file has little to no readable content."
             elif not any(identifiers.values()):
                 reason = "No PAN/Aadhar/Account Number/Phone detected in the document."
             else:

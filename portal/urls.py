@@ -18,6 +18,7 @@ urlpatterns = [
     path("review/", views.review_queue, name="review_queue"),
     path("review/<int:pk>/resolve/", views.review_resolve, name="review_resolve"),
     path("intake/", views.intake, name="intake"),
+    path("intake/upload/", views.intake_upload_view, name="intake_upload"),
     path("intake/batch/<int:pk>/", views.batch_detail, name="batch_detail"),
     path("intake/clear-all/", views.clear_all_batches_view, name="clear_all_batches"),
     path("intake/delete/", views.delete_batches_view, name="delete_batches"),

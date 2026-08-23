@@ -30,11 +30,15 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-rw!p-lrln-o9ewc#9v#c*
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '.trycloudflare.com']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '.trycloudflare.com', '192.168.1.33']
 
 # Needed for the Cloudflare quick-tunnel demo link — Django's CSRF check requires the
 # request's Origin to be explicitly trusted, ALLOWED_HOSTS alone isn't enough.
 CSRF_TRUSTED_ORIGINS = ['https://*.trycloudflare.com']
+
+# Section 4's browser-upload intake (addendum) can legitimately submit up to ~700 files in
+# one POST — comfortably above Django's default file-count ceiling.
+DATA_UPLOAD_MAX_NUMBER_FILES = 1000
 
 
 # Application definition

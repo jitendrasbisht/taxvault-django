@@ -1,11 +1,13 @@
+import csv
 import mimetypes
 from pathlib import Path
 
+import openpyxl
 from django.contrib import admin, messages
-from django.http import FileResponse, Http404
+from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import path
-from django.utils.html import format_html
+from django.utils.html import escape, format_html
 from django.views.decorators.clickjacking import xframe_options_sameorigin
 from django_q.tasks import async_task
 
@@ -67,6 +69,63 @@ class BatchAdmin(ProfileRequiredMixin, FirmScopedAdminMixin, admin.ModelAdmin):
         return render(request, "admin/documents/batch_start.html", context)
 
 
+_PREVIEW_MAX_ROWS = 500
+
+_PREVIEW_STYLE = """
+<style>
+  body { font-family: -apple-system, "Segoe UI", sans-serif; margin: 0; padding: 16px; background: #fff; color: #1e293b; }
+  h3 { font-size: 13px; color: #475569; margin: 20px 0 8px; }
+  h3:first-child { margin-top: 0; }
+  table { border-collapse: collapse; font-size: 12px; width: 100%; margin-bottom: 4px; }
+  td { border: 1px solid #e2e8f0; padding: 4px 8px; text-align: left; white-space: nowrap; }
+  tr:first-child td { font-weight: 600; background: #f8fafc; }
+  .note { font-size: 11px; color: #94a3b8; margin-top: 4px; }
+</style>
+"""
+
+
+def _render_spreadsheet_preview(file_path: Path) -> str:
+    """Server-side HTML table view for .xlsx/.csv (Section 20 addendum): browsers have no
+    native way to render a spreadsheet inline the way they do PDFs/images, so
+    Content-Disposition: inline just triggers a download instead of a preview. Row count is
+    capped since a 700-row bank statement dumped as one giant unstyled table isn't actually
+    more useful than a reasonable preview -- this is a quick look, not a spreadsheet editor."""
+    sheets = []
+    truncated = False
+
+    if file_path.suffix.lower() == ".csv":
+        with open(file_path, newline="", encoding="utf-8-sig", errors="ignore") as f:
+            rows = list(csv.reader(f))
+        truncated = len(rows) > _PREVIEW_MAX_ROWS
+        sheets.append((None, rows[:_PREVIEW_MAX_ROWS]))
+    else:
+        wb = openpyxl.load_workbook(str(file_path), read_only=True, data_only=True)
+        try:
+            for ws in wb.worksheets:
+                rows = []
+                for i, row in enumerate(ws.iter_rows(values_only=True)):
+                    if i >= _PREVIEW_MAX_ROWS:
+                        truncated = True
+                        break
+                    rows.append(["" if c is None else c for c in row])
+                sheets.append((ws.title, rows))
+        finally:
+            wb.close()
+
+    parts = [f"<!doctype html><html><head><meta charset='utf-8'>{_PREVIEW_STYLE}</head><body>"]
+    for name, rows in sheets:
+        if name:
+            parts.append(f"<h3>{escape(name)}</h3>")
+        parts.append("<table>")
+        for row in rows:
+            parts.append("<tr>" + "".join(f"<td>{escape(str(cell))}</td>" for cell in row) + "</tr>")
+        parts.append("</table>")
+    if truncated:
+        parts.append(f"<p class='note'>Showing the first {_PREVIEW_MAX_ROWS} rows only.</p>")
+    parts.append("</body></html>")
+    return "".join(parts)
+
+
 @admin.register(Document)
 class DocumentAdmin(ProfileRequiredMixin, FirmScopedAdminMixin, admin.ModelAdmin):
     list_display = ("original_filename", "client", "doc_code", "status", "ay", "firm", "review_reason", "preview_link")
@@ -98,6 +157,8 @@ class DocumentAdmin(ProfileRequiredMixin, FirmScopedAdminMixin, admin.ModelAdmin
         file_path = absolute_path(document.storage_path)
         if not file_path.exists():
             raise Http404
+        if file_path.suffix.lower() in (".xlsx", ".csv"):
+            return HttpResponse(_render_spreadsheet_preview(file_path))
         content_type, _ = mimetypes.guess_type(str(file_path))
         return FileResponse(
             open(file_path, "rb"),

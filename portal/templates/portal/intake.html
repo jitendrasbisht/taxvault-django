@@ -9,25 +9,48 @@
   </div>
 
   <div class="px-8 py-6">
-    <div class="rounded-xl border-2 border-dashed border-slate-300 bg-white p-10 text-center">
-      <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-100">
-        <i data-lucide="upload" class="h-5 w-5 text-slate-500"></i>
-      </div>
-      <p class="mt-4 text-sm font-medium text-slate-700">Enter the folder path to process</p>
-      <p class="mt-1 text-xs text-slate-400">Accepts up to 700 mixed files &middot; PDF, JPG, PNG</p>
-
-      <form method="post" class="mx-auto mt-6 max-w-sm space-y-3">
-        {% csrf_token %}
-        <input type="text" name="folder_path" required placeholder="C:\path\to\downloads_doc"
-               class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-slate-300 focus:bg-white">
-        <div class="flex items-center gap-2">
-          <label class="text-xs font-medium text-slate-500">Assessment Year</label>
-          <input type="text" name="ay" value="{{ ay }}" class="flex-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs">
+    <div class="grid grid-cols-2 gap-6">
+      <div class="rounded-xl border-2 border-dashed border-slate-300 bg-white p-10 text-center">
+        <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-100">
+          <i data-lucide="folder-open" class="h-5 w-5 text-slate-500"></i>
         </div>
-        <button type="submit" class="btn-primary mt-2 w-full rounded-lg px-5 py-2.5 text-sm font-medium text-white">
-          Start Batch
-        </button>
-      </form>
+        <p class="mt-4 text-sm font-medium text-slate-700">Enter the folder path to process</p>
+        <p class="mt-1 text-xs text-slate-400">Must be a folder on this server &middot; up to 700 files &middot; PDF, JPG, PNG, Excel, CSV</p>
+
+        <form method="post" class="mx-auto mt-6 max-w-sm space-y-3">
+          {% csrf_token %}
+          <input type="text" name="folder_path" required placeholder="C:\path\to\downloads_doc"
+                 class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-slate-300 focus:bg-white">
+          <div class="flex items-center gap-2">
+            <label class="text-xs font-medium text-slate-500">Assessment Year</label>
+            <input type="text" name="ay" value="{{ ay }}" class="flex-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs">
+          </div>
+          <button type="submit" class="btn-primary mt-2 w-full rounded-lg px-5 py-2.5 text-sm font-medium text-white">
+            Start Batch
+          </button>
+        </form>
+      </div>
+
+      <div class="rounded-xl border-2 border-dashed border-slate-300 bg-white p-10 text-center">
+        <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-100">
+          <i data-lucide="upload" class="h-5 w-5 text-slate-500"></i>
+        </div>
+        <p class="mt-4 text-sm font-medium text-slate-700">Or upload files directly from this device</p>
+        <p class="mt-1 text-xs text-slate-400">No server access needed &middot; up to 700 files &middot; PDF, JPG, PNG, Excel, CSV</p>
+
+        <form method="post" action="{% url 'portal:intake_upload' %}" enctype="multipart/form-data" class="mx-auto mt-6 max-w-sm space-y-3">
+          {% csrf_token %}
+          <input type="file" name="files" multiple required accept=".pdf,.jpg,.jpeg,.png,.xlsx,.csv"
+                 class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs outline-none file:mr-3 file:rounded-md file:border-0 file:bg-indigo-50 file:px-2.5 file:py-1.5 file:text-xs file:font-medium file:text-indigo-600">
+          <div class="flex items-center gap-2">
+            <label class="text-xs font-medium text-slate-500">Assessment Year</label>
+            <input type="text" name="ay" value="{{ ay }}" class="flex-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs">
+          </div>
+          <button type="submit" class="btn-primary mt-2 w-full rounded-lg px-5 py-2.5 text-sm font-medium text-white">
+            Upload &amp; Start Batch
+          </button>
+        </form>
+      </div>
     </div>
 
     {% if recent_batches %}
@@ -37,24 +60,22 @@
       <div class="mt-6 rounded-xl border border-slate-200 bg-white">
         <div class="flex items-center justify-between border-b border-slate-100 px-5 py-3">
           <h2 class="text-sm font-semibold text-slate-800">Recent Batches</h2>
-          {% if profile.role == 'firm_admin' %}
           <div class="flex items-center gap-3">
             <button type="submit" id="delete-batches-btn" disabled
                     class="flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-medium text-rose-700 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-40">
               <i data-lucide="trash-2" class="h-3 w-3"></i> Delete Selected (<span id="selected-batch-count">0</span>)
             </button>
+            {% if profile.role == 'firm_admin' %}
             <a href="{% url 'portal:clear_all_batches' %}" class="flex items-center gap-1 text-xs font-medium text-rose-600 hover:underline">
               <i data-lucide="trash-2" class="h-3 w-3"></i> Clear All
             </a>
+            {% endif %}
           </div>
-          {% endif %}
         </div>
         <table class="w-full text-xs">
           <thead>
             <tr class="border-b border-slate-100 text-left uppercase tracking-wide text-slate-400">
-              {% if profile.role == 'firm_admin' %}
               <th class="w-8 px-5 py-2"><input type="checkbox" id="select-all-batch-cb"></th>
-              {% endif %}
               <th class="px-3 py-2 font-medium">Batch</th>
               <th class="px-3 py-2 font-medium">AY</th>
               <th class="px-3 py-2 font-medium">Found</th>
@@ -67,9 +88,7 @@
           <tbody>
             {% for batch in recent_batches %}
             <tr onclick="window.location='{% url 'portal:batch_detail' batch.pk %}'" class="cursor-pointer border-b border-slate-50 last:border-0 hover:bg-slate-50">
-              {% if profile.role == 'firm_admin' %}
               <td class="px-5 py-2.5" onclick="event.stopPropagation()"><input type="checkbox" name="batch_ids" value="{{ batch.pk }}" class="batch-cb"></td>
-              {% endif %}
               <td class="px-3 py-2.5 font-medium text-slate-700">#{{ batch.pk }}</td>
               <td class="px-3 py-2.5 text-slate-500">{{ batch.ay }}</td>
               <td class="px-3 py-2.5 text-slate-500">{{ batch.files_found }}</td>

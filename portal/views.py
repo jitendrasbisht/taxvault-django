@@ -517,6 +517,65 @@ def intake(request, profile):
     return render(request, "portal/intake.html", context)
 
 
+def _unique_upload_dest(staging: Path, filename: str) -> Path:
+    """Two files with the same name can legitimately both get uploaded in one batch (e.g.
+    two clients each sending a file called 'AIS.pdf') -- append a counter rather than let
+    the second silently overwrite the first. Path(...).name strips any directory component
+    a crafted filename might carry, so this can never write outside `staging`."""
+    name = Path(filename).name or "file"
+    dest = staging / name
+    if not dest.exists():
+        return dest
+    stem, suffix = Path(name).stem, Path(name).suffix
+    n = 2
+    while (staging / f"{stem}_{n}{suffix}").exists():
+        n += 1
+    return staging / f"{stem}_{n}{suffix}"
+
+
+@portal_view
+def intake_upload_view(request, profile):
+    """Alternate Document Intake input (Section 4 addendum, approved 2026-08-23) for
+    anyone without filesystem access to the server this app runs on -- a real browser file
+    upload, staged into a per-batch folder under VAULT_ROOT/Uploads/ and then fed through
+    the exact same process_batch() pipeline as the folder-path flow above. Nothing about
+    matching, classification, or filing changes; this only changes how files arrive on
+    disk. Still staff/admin-operated, same as the folder-path flow -- not the client-facing
+    upload portal Section 4 explicitly excludes, since actual clients still never log in."""
+    if request.method != "POST":
+        return redirect("portal:intake")
+
+    files = request.FILES.getlist("files")
+    ay = request.POST.get("ay", "").strip() or current_assessment_year()
+    if not files:
+        messages.error(request, "Choose at least one file to upload.")
+        return redirect("portal:intake")
+
+    batch = Batch.objects.create(firm=profile.firm, ay=ay, folder_path="", triggered_by=request.user)
+    staging = Path(settings.VAULT_ROOT) / "Uploads" / f"batch_{batch.id}"
+    staging.mkdir(parents=True, exist_ok=True)
+    for f in files:
+        dest = _unique_upload_dest(staging, f.name)
+        with open(dest, "wb") as out:
+            for chunk in f.chunks():
+                out.write(chunk)
+
+    batch.folder_path = str(staging)
+    batch.save(update_fields=["folder_path"])
+    async_task("documents.tasks.run_batch", batch.id)
+    messages.success(request, f"Uploaded {len(files)} file(s) — batch #{batch.id} queued.")
+    return redirect("portal:batch_detail", pk=batch.id)
+
+    recent_batches = Batch.objects.filter(firm=profile.firm).order_by("-created_at")[:10]
+    context = {
+        "active_nav": "intake",
+        "profile": profile,
+        "ay": current_assessment_year(),
+        "recent_batches": recent_batches,
+    }
+    return render(request, "portal/intake.html", context)
+
+
 @portal_view
 def batch_detail(request, profile, pk):
     batch = get_object_or_404(Batch, pk=pk, firm=profile.firm)
@@ -633,7 +692,7 @@ def _delete_batches(batches_qs):
             sequence_reset = True
 
     for batch_id in batch_ids:
-        for folder in ("Processed_Archive", "Review_Pending"):
+        for folder in ("Processed_Archive", "Review_Pending", "Uploads"):
             shutil.rmtree(Path(settings.VAULT_ROOT) / folder / f"batch_{batch_id}", ignore_errors=True)
 
     return batch_count, doc_count, sequence_reset
@@ -667,12 +726,12 @@ def clear_all_batches_view(request, profile):
     return render(request, "portal/clear_all_batches.html", context)
 
 
-@firm_admin_required
+@portal_view
 def delete_batches_view(request, profile):
     """Targeted delete (one or several, picked via checkboxes on Document Intake) —
-    separate from the firm-wide 'Clear All' reset above. Firm Admin only, same permission
-    level as Clear All, since either way this permanently destroys filed documents, not
-    just intake history."""
+    separate from the firm-wide 'Clear All' reset above, which stays Firm Admin only.
+    Matches the same split already used for Clients: targeted delete is open to Staff
+    (Section 14: Staff has full intake/vault access), only the blanket reset is admin-gated."""
     firm = profile.firm
     batch_ids = request.POST.getlist("batch_ids")
     if not batch_ids:
