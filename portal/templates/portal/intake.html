@@ -5,52 +5,29 @@
 <div class="flex-1 overflow-auto">
   <div class="border-b border-slate-200 bg-white px-8 py-6">
     <h1 class="text-xl font-semibold text-slate-900">Document Intake</h1>
-    <p class="mt-0.5 text-sm text-slate-500">Point at a folder of mixed documents &mdash; TaxVault reads, matches, classifies, and files each one.</p>
+    <p class="mt-0.5 text-sm text-slate-500">Upload a batch of mixed documents &mdash; TaxVault reads, matches, classifies, and files each one.</p>
   </div>
 
   <div class="px-8 py-6">
-    <div class="grid grid-cols-2 gap-6">
-      <div class="rounded-xl border-2 border-dashed border-slate-300 bg-white p-10 text-center">
-        <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-100">
-          <i data-lucide="folder-open" class="h-5 w-5 text-slate-500"></i>
-        </div>
-        <p class="mt-4 text-sm font-medium text-slate-700">Enter the folder path to process</p>
-        <p class="mt-1 text-xs text-slate-400">Must be a folder on this server &middot; up to 700 files &middot; PDF, JPG, PNG, Excel, CSV</p>
-
-        <form method="post" class="mx-auto mt-6 max-w-sm space-y-3">
-          {% csrf_token %}
-          <input type="text" name="folder_path" required placeholder="C:\path\to\downloads_doc"
-                 class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-slate-300 focus:bg-white">
-          <div class="flex items-center gap-2">
-            <label class="text-xs font-medium text-slate-500">Assessment Year</label>
-            <input type="text" name="ay" value="{{ ay }}" class="flex-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs">
-          </div>
-          <button type="submit" class="btn-primary mt-2 w-full rounded-lg px-5 py-2.5 text-sm font-medium text-white">
-            Start Batch
-          </button>
-        </form>
+    <div class="mx-auto max-w-lg rounded-xl border-2 border-dashed border-slate-300 bg-white p-10 text-center">
+      <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-100">
+        <i data-lucide="upload" class="h-5 w-5 text-slate-500"></i>
       </div>
+      <p class="mt-4 text-sm font-medium text-slate-700">Upload files to process</p>
+      <p class="mt-1 text-xs text-slate-400">Up to 700 files &middot; PDF, JPG, PNG, Excel, CSV</p>
 
-      <div class="rounded-xl border-2 border-dashed border-slate-300 bg-white p-10 text-center">
-        <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-100">
-          <i data-lucide="upload" class="h-5 w-5 text-slate-500"></i>
+      <form method="post" action="{% url 'portal:intake_upload' %}" enctype="multipart/form-data" class="mx-auto mt-6 max-w-sm space-y-3">
+        {% csrf_token %}
+        <input type="file" name="files" multiple required accept=".pdf,.jpg,.jpeg,.png,.xlsx,.csv"
+               class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs outline-none file:mr-3 file:rounded-md file:border-0 file:bg-indigo-50 file:px-2.5 file:py-1.5 file:text-xs file:font-medium file:text-indigo-600">
+        <div class="flex items-center gap-2">
+          <label class="text-xs font-medium text-slate-500">Assessment Year</label>
+          <input type="text" name="ay" value="{{ ay }}" class="flex-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs">
         </div>
-        <p class="mt-4 text-sm font-medium text-slate-700">Or upload files directly from this device</p>
-        <p class="mt-1 text-xs text-slate-400">No server access needed &middot; up to 700 files &middot; PDF, JPG, PNG, Excel, CSV</p>
-
-        <form method="post" action="{% url 'portal:intake_upload' %}" enctype="multipart/form-data" class="mx-auto mt-6 max-w-sm space-y-3">
-          {% csrf_token %}
-          <input type="file" name="files" multiple required accept=".pdf,.jpg,.jpeg,.png,.xlsx,.csv"
-                 class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs outline-none file:mr-3 file:rounded-md file:border-0 file:bg-indigo-50 file:px-2.5 file:py-1.5 file:text-xs file:font-medium file:text-indigo-600">
-          <div class="flex items-center gap-2">
-            <label class="text-xs font-medium text-slate-500">Assessment Year</label>
-            <input type="text" name="ay" value="{{ ay }}" class="flex-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs">
-          </div>
-          <button type="submit" class="btn-primary mt-2 w-full rounded-lg px-5 py-2.5 text-sm font-medium text-white">
-            Upload &amp; Start Batch
-          </button>
-        </form>
-      </div>
+        <button type="submit" class="btn-primary mt-2 w-full rounded-lg px-5 py-2.5 text-sm font-medium text-white">
+          Upload &amp; Start Batch
+        </button>
+      </form>
     </div>
 
     {% if recent_batches %}
